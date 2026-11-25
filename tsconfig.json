@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": [
+      "es2023",
+      "dom",
+      "dom.iterable"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "noUncheckedIndexedAccess": false,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "paths": {
+      "@fixtures/*": [
+        "./fixtures/stage-a/*"
+      ]
+    }
+  },
+  "include": [
+    "apps/web/src",
+    "packages/*/src",
+    "fixtures/stage-a/*.ts",
+    "fixtures/stage-a/src",
+    "scripts",
+    "vitest.config.ts"
+  ]
+}

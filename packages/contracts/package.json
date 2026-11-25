@@ -1,0 +1,11 @@
+{
+  "name": "@rw/contracts",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "v1.0.0 实施合同（来自交接包，未修改）及由其生成的 TypeScript 类型",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema/*": "./schema/*"
+  }
+}

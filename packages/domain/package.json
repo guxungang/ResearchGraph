@@ -1,0 +1,10 @@
+{
+  "name": "@rw/domain",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "领域状态、显示语义与不变量（纯函数，不依赖任何 Harness 私有格式）",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

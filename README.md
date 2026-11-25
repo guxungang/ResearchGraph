@@ -1,0 +1,49 @@
+# 长期科研人机协作工作台 · 阶段A可理解样机
+
+这是按交接包《长期科研人机协作工作台产品与实施方案》v1.0 实现的**阶段A样机**：用一个固定的虚构研究项目，演示四个页面——概览、研究路线（图/列表/比较）、待处理（决定与审阅）、资料（主张、实验、文件、术语），以及研究单元详情和快照，并提供理解测试材料。页面遵循“先给要点、细节按需展开”（D-006）。
+
+**它不是可用的产品**：没有服务端和数据库，不连接任何模型或 Harness，所有数据都是虚构的。界面上的操作只在本机浏览器中模拟（localStorage），不写入任何项目。
+
+## 运行
+
+需要 Node ≥ 26.13（本机已安装在 `~/.local/node`，并链接到 `~/.local/bin`）。
+
+```bash
+npm install
+npm run dev
+```
+
+然后打开 http://127.0.0.1:5174 。理解测试材料的主持人索引在 http://127.0.0.1:5174/#/test 。
+
+其他命令：
+
+| 命令 | 作用 |
+|---|---|
+| `npm run check` | 一次跑完下面四项 |
+| `npm run contracts:check` | 核对 `packages/contracts/schema` 与交接包 MANIFEST 一致（合同未被静默修改） |
+| `npm run fixtures` | 重新生成夹具并校验（合同 Schema + 跨对象检查） |
+| `npm run typecheck` | TypeScript 检查 |
+| `npm test` | 领域规则与模拟服务的测试（对应部分验收用例） |
+| `npm run build` | 生产构建到 `apps/web/dist` |
+
+右上角“设置”里可以切换主题（含高对比度）和字号，查看连接能力、打开理解测试材料，或“重置样机”清除本机的模拟操作。
+
+## 目录
+
+```
+docs/handoff/                 交接包原文（方案、合同、来源、图）
+docs/decisions/               设计决定记录（D-001 … D-006）
+docs/stage-a/                 阶段A理解测试计划（草案）
+packages/contracts/           合同 v1.0.0 原文 + 由 Schema 生成的 TypeScript 类型
+packages/domain/              状态显示语义与不变量检查（纯函数）
+fixtures/stage-a/             夹具生成器、快照（符合合同）与样机扩展数据（非合同）
+apps/web/                     React + TypeScript 前端（Vite、React Flow、ELK）
+scripts/                      合同校验、类型生成、夹具校验
+```
+
+## 需要你决定或知道的事
+
+- **D-004（待决定）**：合同要求人工写入都带授权，但没有规定项目所有者的第一份授权从哪里来。样机暂时假设创建项目时自动签发。见 `docs/decisions/0004-owner-grant-bootstrap.md`。
+- **D-002**：术语表、待关注提醒、工作约定等是方案要求但合同 v1.0.0 没有定义的内容，样机放在单独的扩展文件中。进入阶段B前要修订合同。
+- **阶段A的通过条件是真实读者的理解测试**，样机本身不能证明通过。测试计划草案在 `docs/stage-a/comprehension-test-plan.md`，需要你确认并冻结后再开展。
+- 代码放在 OneDrive 中（D-005）。阶段B的活动数据库必须放在同步目录之外。

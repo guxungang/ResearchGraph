@@ -1,0 +1,32 @@
+{
+  "contract_version": "1.0.0",
+  "checked_on": "2026-11-25",
+  "schema_definitions": 36,
+  "domain_entity_types": 18,
+  "domain_command_types": 21,
+  "http_operations": 35,
+  "future_product_acceptance_scenarios": 60,
+  "source_groups": 50,
+  "performed_checks": [
+    "JSON Schema Draft 2020-12 schema validity",
+    "Fictional example schema and date/time format validity",
+    "OpenAPI internal/external reference target and JSON Pointer resolution",
+    "OpenAPI component JSON Schema checks",
+    "Unique operationIds and path parameter presence",
+    "Mutation idempotency/version fields and request identity-field exclusion",
+    "Example core cross-object references and session binding consistency",
+    "Five invalid structures rejected; two partial-capture structures accepted",
+    "Source identifier coverage and bibliography mapping",
+    "Document rendering and page-by-page visual review"
+  ],
+  "not_performed": [
+    "Full OpenAPI metaschema validation with an independent OpenAPI validator",
+    "Running application, database migrations or event replay implementation",
+    "Real Codex or Claude integration end-to-end tests",
+    "Authorization middleware penetration or runtime security testing",
+    "Human comprehension experiments or longitudinal productivity studies",
+    "Installation and long-term testing of every reviewed external project"
+  ],
+  "example_warning": "All research data and hashes are fictional fixtures. Entities form a snapshot; event array is an excerpt, not a complete replay log.",
+  "acceptance_warning": "The 60 acceptance scenarios are implementation requirements, not claims of completed product testing."
+}

@@ -1,0 +1,4345 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: 长期科研协作工作台核心接口
+  version: 1.0.0
+  description: 本合同定义v1核心接口和不可改变的不变量，不是已实现服务。全部持久化通过单一SQLite事务服务；events表为真源，当前表为事务内投影。外部JSONL、Markdown、快照为导出。所有状态与身份由服务器验证；新增接口不得绕过用户授权、版本、项目隔离和溯源约束。
+servers:
+- url: http://127.0.0.1:37641
+  description: 建议本地开发监听地址；生产端口可配置。只绑定loopback，仍需认证与Origin校验。
+security:
+- userSession: []
+- serviceToken: []
+tags:
+- name: Core
+  description: 项目级核心合同
+paths:
+  /v1/projects:
+    get:
+      operationId: listProjects
+      summary: 列出当前身份可见项目
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityList'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createProject
+      summary: 创建项目及初始路线
+      description: 由用户明确设定目标；生成Project、初始Branch及事件，单事务提交。
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+  /v1/projects/{project_id}/state:
+    get:
+      operationId: getProjectState
+      summary: 读取整体状态、未知覆盖和待决定事项
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectState'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/map:
+    get:
+      operationId: getProjectMap
+      summary: 读取筛选后的研究单元图
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      - name: branch_id
+        in: query
+        schema:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      - name: focus_unit_id
+        in: query
+        schema:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMap'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/units/{entity_id}:
+    get:
+      operationId: getResearchUnit
+      summary: 读取工作节点
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/ResearchUnit
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/evidence/{entity_id}:
+    get:
+      operationId: getEvidence
+      summary: 读取证据及精确来源
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/Evidence
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/decisions/{entity_id}:
+    get:
+      operationId: getDecision
+      summary: 读取选择依据与状态
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/Decision
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/claims/{entity_id}:
+    get:
+      operationId: getClaim
+      summary: 读取主张及适用条件
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/Claim
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/artifacts/{entity_id}:
+    get:
+      operationId: getArtifactVersion
+      summary: 读取成果版本元数据
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/ArtifactVersion
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/checkpoints/{entity_id}:
+    get:
+      operationId: getCheckpoint
+      summary: 读取快照清单
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/Checkpoint
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/proposals/{entity_id}:
+    get:
+      operationId: getProposal
+      summary: 读取候选变更
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/Proposal
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/sessions/{entity_id}:
+    get:
+      operationId: getSessionBinding
+      summary: 读取会话绑定与实际状态
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/SessionBinding
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/contexts/{entity_id}:
+    get:
+      operationId: getContextBundle
+      summary: 读取已构建上下文包
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/ContextBundle
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/briefs/{entity_id}:
+    get:
+      operationId: getReadingBrief
+      summary: 读取独立解释材料
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/ReadingBrief
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/grants/{entity_id}:
+    get:
+      operationId: getGrant
+      summary: 读取当前授权
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json#/$defs/Grant
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/recall:
+    get:
+      operationId: recallProject
+      summary: 检索当前有效与历史资料并标注差异
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - name: branch_id
+        in: query
+        schema:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      - name: valid_at
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: recorded_before
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - $ref: '#/components/parameters/Limit'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecallResponse'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/capabilities:
+    get:
+      operationId: getCapabilities
+      summary: 读取真实连接能力
+      description: ''
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntityList'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/commands/{entity_id}:
+    get:
+      operationId: getCommandStatus
+      summary: 查询异步请求处理状态
+      description: entity_id为CommandReceipt.command_id。只可查询当前principal有权查看的项目命令；状态变化不推进Project语义版本。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandStatus'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/artifacts/register:
+    post:
+      operationId: registerArtifact
+      summary: 注册已选择的本地资料或外部版本引用
+      description: 本地location必须在用户已授权根目录或已登记文件句柄范围内；服务端读取并计算hash，不相信模型声称的hash。外部引用无法核验时标external_unchecked。只生成不可变ArtifactVersion，不自动形成已核验Evidence。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterArtifactRequest'
+  /v1/projects/{project_id}/artifacts/upload:
+    post:
+      operationId: uploadArtifact
+      summary: 上传用户选择的资料文件到本地内容库
+      description: 仅接收用户明确选中的文件；原始内容不可执行。限制大小、内容类型和路径，服务端计算hash并原子落盘。单次最多50MiB；更大文件使用已授权路径注册。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: 文件超过单次上传限制；引导使用已授权路径注册，不自动拆包。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadArtifactRequest'
+  /v1/projects/{project_id}/exports/snapshot:
+    get:
+      operationId: exportProject
+      summary: 导出一致性只读项目快照
+      description: 在SQLite一致性读取事务中导出；不含密钥和临时签名URL。此文件不会直接回写，后续导入走独立有审查的导入管线。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: ./domain.schema.json
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/events:
+    get:
+      operationId: streamEvents
+      summary: 订阅提交后的项目事件
+      description: Last-Event-ID优先于cursor。游标过期在建立流之前返回409/resync_required；流内发现缺口发送resync_required后关闭。客户端重新读取state/map再续订。事件至少一次投递，按event
+        id去重。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - name: Last-Event-ID
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      security:
+      - userSession: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - service
+      responses:
+        '200':
+          description: SSE流；id/event/data字段含义见SSEEvent。心跳不改变项目版本。
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              x-decoded-message-schema:
+                $ref: '#/components/schemas/SSEEvent'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/projects/{project_id}/proposals:
+    post:
+      operationId: submitProposal
+      summary: 提交候选业务变更
+      description: 只创建Proposal，不执行commands。actor由认证派生；模型无法设置accepted/applied。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitProposalRequest'
+  /v1/projects/{project_id}/proposals/{entity_id}/apply:
+    post:
+      operationId: applyProposal
+      summary: 由用户采用或拒绝候选变更
+      description: 校验Project与Proposal双版本及Grant。goal.change、assumption.change、branch.promote和decision.accept必须有明确覆盖的现有授权。所有commands及事件/投影原子提交；任一失败全部回滚。此HTTP入口仅human可调用；已明确授权的自动应用走服务器内部policy入口，不向模型或MCP暴露。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyProposalRequest'
+  /v1/projects/{project_id}/branches/fork:
+    post:
+      operationId: forkBranch
+      summary: 从已有节点或快照建立新探索
+      description: 保留当前工作区和后续证据；新建Branch、起始ResearchUnit和continues_to边。可选创建独立worktree；不执行破坏性reset。外部文件准备失败不得留下假成功的checkpoint。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForkBranchRequest'
+  /v1/projects/{project_id}/checkpoints:
+    post:
+      operationId: createCheckpoint
+      summary: 创建认知与成果清单快照
+      description: 哈希核验和快照清单后提交。缺少外部文件时保留明确的partial/knowledge_only状态。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCheckpointRequest'
+  /v1/projects/{project_id}/session-bindings:
+    post:
+      operationId: bindExternalSession
+      summary: 把既有会话显式绑定到工作节点
+      description: 只支持archive/sidecar绑定。不允许改绑活跃turn；点击其他节点不调用本接口。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionBindingRequest'
+  /v1/projects/{project_id}/sessions/start:
+    post:
+      operationId: startManagedSession
+      summary: 创建或恢复工作台管理的会话
+      description: 要求createSession/resumeSession能力已核验；固定unit/branch/context版本。202为排队，不意味着模型已经开始或任务成功。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '202':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartManagedSessionRequest'
+  /v1/projects/{project_id}/sessions/{entity_id}/interrupt:
+    post:
+      operationId: interruptSession
+      summary: 请求中断托管执行
+      description: 记录interrupt_requested。等实际终态再变成interrupted；副作用不回滚。无控制能力返回501，伴随模式不伪装已停止。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '202':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterruptSessionRequest'
+  /v1/projects/{project_id}/grants:
+    post:
+      operationId: createGrant
+      summary: 记录用户明确给出的范围授权
+      description: 仅human身份。issued_by与authorization_source由鉴权请求生成，不接受模型提供的用户身份。授权可覆盖后续多次已批准范围内操作，减少重复询问。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGrantRequest'
+  /v1/projects/{project_id}/grants/{entity_id}/revoke:
+    post:
+      operationId: revokeGrant
+      summary: 撤销后续动作授权
+      description: 撤销不隐式撤销已经完成的外部副作用。影响正在运行任务时另行发送中断请求。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/EntityId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '200':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeGrantRequest'
+  /v1/projects/{project_id}/reviews:
+    post:
+      operationId: createReview
+      summary: 记录针对精确版本的人工审阅
+      description: 审阅与理解状态显式记录；版本更新后旧review保留但is_current=false。模型只能提交审阅建议Proposal，不能调用本人工接口。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      x-allowed-principal-kinds:
+      - human
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewRequest'
+  /v1/projects/{project_id}/contexts:
+    post:
+      operationId: buildContext
+      summary: 构建有限预算的上下文包
+      description: 不改变研究目标、决策和批准状态。来源不足必须在包中说明；记录实际选入与排除内容。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '201':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildContextRequest'
+  /v1/projects/{project_id}/briefs:
+    post:
+      operationId: createReadingBrief
+      summary: 生成含背景与证据的解释材料
+      description: 异步内容派生任务；失败不影响原始资料和现有状态。读取brief通过回执中的实体ID；不得修改来源知识。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - userSession: []
+        csrfToken: []
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - human
+      - agent
+      - service
+      responses:
+        '202':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReadingBriefRequest'
+  /v1/projects/{project_id}/ingest/events:
+    post:
+      operationId: ingestSourceEvent
+      summary: 由已登记适配器提交原始观测
+      description: 身份必须与已登记source instance匹配；来源ID由token绑定，不由请求指定。适配器只能提交原始观测，不可替用户接受决策。raw payload只入不可执行的原始记录；服务端生成canonical
+        event。本接口expected_revision是采集关联版本，较旧值不丢弃真实观测；不会据此执行旧业务命令或推进语义Project.revision。
+      parameters:
+      - $ref: '#/components/parameters/ProjectId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      security:
+      - serviceToken: []
+      x-allowed-principal-kinds:
+      - service
+      - importer
+      responses:
+        '202':
+          description: 成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandReceipt'
+        '400':
+          description: 请求schema不合法。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 缺少或无效认证。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 身份或授权范围不足。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 项目或实体不存在，或不属于当前可见范围。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 项目或目标修订、幂等内容、活动执行占用等冲突；不得部分提交。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 输入结构合法，但领域关系、状态转换、内容摘要或范围规则不成立；附可操作说明。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: 速率或用户预算限制；保留输入和原始记录。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              description: 可确定重试时间时返回秒数；用户预算耗尽且需变更预算时可省略。
+              schema:
+                type: integer
+                minimum: 0
+        '501':
+          description: 当前连接不支持或尚未核验所需能力。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: 依赖不可用；明确是否已入队，不重放未知副作用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestSourceEventRequest'
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+          - unauthenticated
+          - forbidden
+          - not_found
+          - revision_conflict
+          - idempotency_conflict
+          - invalid_transition
+          - invalid_graph
+          - invalid_scope
+          - source_unavailable
+          - resync_required
+          - capability_unsupported
+          - capability_unverified
+          - validation_failed
+          - dependency_unavailable
+          - rate_limited
+          - budget_exceeded
+        message:
+          type: string
+          minLength: 1
+        request_id:
+          type: string
+          minLength: 1
+        current_revision:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+        retryable:
+          type: boolean
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              reason:
+                type: string
+                minLength: 1
+            required:
+            - field
+            - reason
+            additionalProperties: false
+          minItems: 0
+      required:
+      - code
+      - message
+      - request_id
+      - current_revision
+      - retryable
+      - details
+      additionalProperties: false
+    CommandReceipt:
+      type: object
+      properties:
+        command_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        project_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        project_revision:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - applied
+          - queued
+          - accepted
+        event_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        result_entity_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        message:
+          type: string
+        request_id:
+          type: string
+          minLength: 1
+      required:
+      - command_id
+      - project_id
+      - project_revision
+      - status
+      - event_ids
+      - result_entity_ids
+      - message
+      - request_id
+      additionalProperties: false
+      description: accepted/queued仅表示接收；执行终态需事件确认。相同幂等键同请求返回原回执。
+    CommandStatus:
+      type: object
+      properties:
+        command_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        project_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        status:
+          type: string
+          enum:
+          - accepted
+          - queued
+          - running
+          - succeeded
+          - failed
+          - cancelled
+          - unknown
+        submitted_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        result_entity_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        event_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        error:
+          anyOf:
+          - $ref: '#/components/schemas/Error'
+          - type: 'null'
+        status_note:
+          type: string
+      required:
+      - command_id
+      - project_id
+      - status
+      - submitted_at
+      - updated_at
+      - result_entity_ids
+      - event_ids
+      - error
+      - status_note
+      additionalProperties: false
+      description: 异步派生或会话启动请求的处理状态，供SSE中断后查询。succeeded只表示该请求处理成功，不等于科研目标完成。此技术任务不投影为探索图节点。
+    ProjectState:
+      type: object
+      properties:
+        project:
+          $ref: ./domain.schema.json#/$defs/Project
+        current_branch:
+          $ref: ./domain.schema.json#/$defs/Branch
+        focus_unit:
+          anyOf:
+          - $ref: ./domain.schema.json#/$defs/ResearchUnit
+          - type: 'null'
+        active_sessions:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/SessionBinding
+          minItems: 0
+        pending_proposals:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/Proposal
+          minItems: 0
+        unreviewed_entity_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        blocking_unit_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        last_event_seq:
+          type: integer
+          minimum: 0
+        coverage_summary:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - project
+      - current_branch
+      - focus_unit
+      - active_sessions
+      - pending_proposals
+      - unreviewed_entity_ids
+      - blocking_unit_ids
+      - last_event_seq
+      - coverage_summary
+      - updated_at
+      additionalProperties: false
+    ProjectMap:
+      type: object
+      properties:
+        project_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        project_revision:
+          type: integer
+          minimum: 1
+        branch_id:
+          anyOf:
+          - type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          - type: 'null'
+        nodes:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/ResearchUnit
+          minItems: 0
+        edges:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/GraphEdge
+          minItems: 0
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+        truncated:
+          type: boolean
+      required:
+      - project_id
+      - project_revision
+      - branch_id
+      - nodes
+      - edges
+      - next_cursor
+      - truncated
+      additionalProperties: false
+      description: 布局坐标为客户端视图状态，不改变研究关系。这里只投影ResearchUnit节点；其他实体由详情或独立证据视图呈现。
+    RecallResponse:
+      type: object
+      properties:
+        project_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        project_revision:
+          type: integer
+          minimum: 1
+        query:
+          type: string
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              entity_id:
+                type: string
+                description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+                pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+              entity_kind:
+                type: string
+              revision:
+                type: integer
+                minimum: 1
+              excerpt:
+                type: string
+              source_refs:
+                type: array
+                items:
+                  $ref: ./domain.schema.json#/$defs/SourceLocator
+                minItems: 0
+              validity_note:
+                type: string
+              match_kind:
+                type: string
+                enum:
+                - exact
+                - lexical
+                - semantic
+                - relation
+              rank_score:
+                anyOf:
+                - type: number
+                - type: 'null'
+            required:
+            - entity_id
+            - entity_kind
+            - revision
+            - excerpt
+            - source_refs
+            - validity_note
+            - match_kind
+            - rank_score
+            additionalProperties: false
+          minItems: 0
+        coverage_note:
+          type: string
+      required:
+      - project_id
+      - project_revision
+      - query
+      - results
+      - coverage_note
+      additionalProperties: false
+    SSEEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 可作为Last-Event-ID的不可解读游标。
+          minLength: 1
+        event:
+          type: string
+          enum:
+          - project_event
+          - heartbeat
+          - resync_required
+        data:
+          oneOf:
+          - $ref: ./domain.schema.json#/$defs/Event
+          - type: object
+            properties:
+              last_event_seq:
+                type: integer
+                minimum: 0
+              server_time:
+                type: string
+                format: date-time
+            required:
+            - last_event_seq
+            - server_time
+            additionalProperties: false
+          - type: object
+            properties:
+              reason:
+                type: string
+              state_url:
+                type: string
+            required:
+            - reason
+            - state_url
+            additionalProperties: false
+      required:
+      - id
+      - event
+      - data
+      additionalProperties: false
+      description: 以标准SSE的id/event/data行发送；这里表示解码后的语义结构。游标仅在同项目与服务实例授权范围内有效。
+    EntityList:
+      type: object
+      properties:
+        project_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        project_revision:
+          type: integer
+          minimum: 1
+        items:
+          type: array
+          items:
+            oneOf:
+            - $ref: ./domain.schema.json#/$defs/Project
+            - $ref: ./domain.schema.json#/$defs/CapabilityManifest
+          minItems: 0
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+      required:
+      - project_id
+      - project_revision
+      - items
+      - next_cursor
+      additionalProperties: false
+    CreateProjectRequest:
+      type: object
+      properties:
+        expected_revision:
+          const: 0
+          description: 新建项目必须为0。
+        name:
+          type: string
+          minLength: 1
+        goal:
+          type: string
+          minLength: 1
+        problem_statement:
+          type: string
+          minLength: 1
+        in_scope:
+          type: array
+          items:
+            type: string
+          minItems: 0
+        out_of_scope:
+          type: array
+          items:
+            type: string
+          minItems: 0
+        constraints:
+          type: array
+          items:
+            type: string
+          minItems: 0
+        language:
+          type: string
+        timezone:
+          type: string
+      required:
+      - expected_revision
+      - name
+      - goal
+      - problem_statement
+      - in_scope
+      - out_of_scope
+      - constraints
+      - language
+      - timezone
+      additionalProperties: false
+    SubmitProposalRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        title:
+          type: string
+          minLength: 1
+        summary:
+          type: string
+          minLength: 1
+        target_revision_refs:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/RevisionRef
+          minItems: 0
+        commands:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/DomainCommand
+          minItems: 1
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        expected_impact:
+          type: string
+          minLength: 1
+        risk_and_uncertainty:
+          type: string
+        source_refs:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/SourceLocator
+          minItems: 1
+      required:
+      - expected_revision
+      - title
+      - summary
+      - target_revision_refs
+      - commands
+      - evidence_ids
+      - expected_impact
+      - risk_and_uncertainty
+      - source_refs
+      additionalProperties: false
+    ApplyProposalRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        expected_target_revision:
+          type: integer
+          minimum: 1
+          description: 当前Proposal.revision。
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        choice:
+          type: string
+          enum:
+          - apply
+          - reject
+        reason:
+          type: string
+          minLength: 1
+        user_action_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - expected_target_revision
+      - grant_id
+      - choice
+      - reason
+      - user_action_id
+      additionalProperties: false
+    ForkBranchRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        source_unit_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        source_checkpoint_id:
+          anyOf:
+          - type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          - type: 'null'
+        new_branch_name:
+          type: string
+          minLength: 1
+        purpose:
+          type: string
+          minLength: 1
+        create_worktree:
+          type: boolean
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        context_policy:
+          const: retain_current_counterevidence
+      required:
+      - expected_revision
+      - source_unit_id
+      - source_checkpoint_id
+      - new_branch_name
+      - purpose
+      - create_worktree
+      - grant_id
+      - context_policy
+      additionalProperties: false
+    CreateCheckpointRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        title:
+          type: string
+          minLength: 1
+        branch_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        unit_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        artifact_version_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        include_dirty_patch:
+          type: boolean
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - title
+      - branch_id
+      - unit_id
+      - artifact_version_ids
+      - include_dirty_patch
+      - grant_id
+      additionalProperties: false
+    CreateSessionBindingRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        connection_mode:
+          type: string
+          enum:
+          - archive
+          - sidecar
+        harness_instance_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        provider_session_id:
+          type: string
+          minLength: 1
+        provider_turn_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+        unit_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        branch_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        context_bundle_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        worktree_ref:
+          anyOf:
+          - type: string
+          - type: 'null'
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - connection_mode
+      - harness_instance_id
+      - provider_session_id
+      - provider_turn_id
+      - unit_id
+      - branch_id
+      - context_bundle_id
+      - worktree_ref
+      - grant_id
+      additionalProperties: false
+    StartManagedSessionRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        harness_instance_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        unit_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        branch_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        context_bundle_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        prompt:
+          type: string
+          minLength: 1
+        resume_provider_session_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+        worktree_ref:
+          anyOf:
+          - type: string
+          - type: 'null'
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - harness_instance_id
+      - unit_id
+      - branch_id
+      - context_bundle_id
+      - prompt
+      - resume_provider_session_id
+      - worktree_ref
+      - grant_id
+      additionalProperties: false
+    InterruptSessionRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        expected_target_revision:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - expected_target_revision
+      - reason
+      - grant_id
+      additionalProperties: false
+    CreateGrantRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        subject_principal_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 1
+        actions:
+          type: array
+          items:
+            type: string
+            enum:
+            - goal.change
+            - assumption.change
+            - decision.accept
+            - decision.reject
+            - decision.supersede
+            - branch.promote
+            - branch.create
+            - branch.archive
+            - branch.merge
+            - unit.create
+            - unit.update
+            - unit.revise
+            - unit.reorganize
+            - claim.create
+            - claim.revise
+            - claim.assess
+            - evidence.create
+            - evidence.revise
+            - evidence.attach
+            - artifact.register
+            - graph.link
+            - graph.correct
+            - checkpoint.create
+            - session.start
+            - session.interrupt
+            - review.record
+          minItems: 1
+        scope:
+          oneOf:
+          - type: object
+            properties:
+              kind:
+                const: project
+              project_id:
+                type: string
+                description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+                pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+            required:
+            - kind
+            - project_id
+            additionalProperties: false
+          - type: object
+            properties:
+              kind:
+                const: branches
+              project_id:
+                type: string
+                description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+                pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+              branch_ids:
+                type: array
+                items:
+                  type: string
+                  description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+                  pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+                minItems: 1
+            required:
+            - kind
+            - project_id
+            - branch_ids
+            additionalProperties: false
+          - type: object
+            properties:
+              kind:
+                const: units
+              project_id:
+                type: string
+                description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+                pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+              unit_ids:
+                type: array
+                items:
+                  type: string
+                  description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+                  pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+                minItems: 1
+            required:
+            - kind
+            - project_id
+            - unit_ids
+            additionalProperties: false
+          - type: object
+            properties:
+              kind:
+                const: proposal
+              project_id:
+                type: string
+                description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+                pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+              proposal_id:
+                type: string
+                description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+                pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+              proposal_revision:
+                type: integer
+                minimum: 1
+            required:
+            - kind
+            - project_id
+            - proposal_id
+            - proposal_revision
+            additionalProperties: false
+        application_policy:
+          type: string
+          enum:
+          - human_only
+          - policy_within_scope
+          - policy_exact_proposal
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        max_cost_usd:
+          anyOf:
+          - type: number
+            minimum: 0
+          - type: 'null'
+        reason:
+          type: string
+          minLength: 1
+        user_action_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - subject_principal_ids
+      - actions
+      - scope
+      - application_policy
+      - expires_at
+      - max_cost_usd
+      - reason
+      - user_action_id
+      additionalProperties: false
+    RevokeGrantRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        expected_target_revision:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+        user_action_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - expected_target_revision
+      - reason
+      - user_action_id
+      additionalProperties: false
+    CreateReviewRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        target_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        reviewed_revision:
+          type: integer
+          minimum: 1
+        review_kind:
+          type: string
+          enum:
+          - user_review
+          - scientific_review
+          - implementation_review
+        status:
+          type: string
+          enum:
+          - unreviewed
+          - needs_changes
+          - accepted
+        understanding_status:
+          type: string
+          enum:
+          - not_reported
+          - needs_explanation
+          - self_reported_understood
+        findings:
+          type: array
+          items:
+            type: string
+          minItems: 0
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          minItems: 0
+        source_revision_refs:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/RevisionRef
+          minItems: 0
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - target_id
+      - reviewed_revision
+      - review_kind
+      - status
+      - understanding_status
+      - findings
+      - evidence_ids
+      - source_revision_refs
+      - grant_id
+      additionalProperties: false
+    BuildContextRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 请求派生内容时的Project语义版本；绑定该输入快照。版本已变时仍可保留为历史派生，不覆盖当前版本。
+        branch_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        unit_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        built_for:
+          type: string
+          enum:
+          - session_start
+          - user_prompt
+          - after_compaction
+          - manual_handoff
+        token_budget:
+          type: integer
+          minimum: 1
+        snapshot_mode:
+          type: string
+          enum:
+          - current_valid
+          - historical_reconstruction
+        history_basis:
+          type: string
+          enum:
+          - not_applicable
+          - recorded_at
+          - source_occurred_at
+        as_of_time:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - expected_revision
+      - branch_id
+      - unit_id
+      - built_for
+      - token_budget
+      - snapshot_mode
+      - history_basis
+      - as_of_time
+      additionalProperties: false
+      allOf:
+      - if:
+          properties:
+            snapshot_mode:
+              const: historical_reconstruction
+        then:
+          properties:
+            history_basis:
+              type: string
+              enum:
+              - recorded_at
+              - source_occurred_at
+            as_of_time:
+              type: string
+              format: date-time
+    CreateReadingBriefRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 请求派生内容时的Project语义版本；绑定该输入快照。版本已变时仍可保留为历史派生，不覆盖当前版本。
+        unit_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+        audience:
+          type: string
+          enum:
+          - general_researcher
+          - domain_familiar
+          - implementation_familiar
+        source_revision_refs:
+          type: array
+          items:
+            $ref: ./domain.schema.json#/$defs/RevisionRef
+          minItems: 1
+      required:
+      - expected_revision
+      - unit_id
+      - audience
+      - source_revision_refs
+      additionalProperties: false
+    IngestSourceEventRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 采集时观察到的Project语义版本，仅作关联元数据；较旧版本不丢弃真实观测。该原始采集接口不执行研究状态命令。
+        source_event_id:
+          type: string
+          minLength: 1
+        source_sequence:
+          anyOf:
+          - type: integer
+            minimum: 0
+          - type: 'null'
+        occurred_at:
+          type: string
+          format: date-time
+        session_binding_id:
+          anyOf:
+          - type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          - type: 'null'
+        source_locator:
+          $ref: ./domain.schema.json#/$defs/SourceLocator
+        payload_sha256:
+          type: string
+          description: SHA-256 十六进制摘要。
+          pattern: ^[a-f0-9]{64}$
+        payload_media_type:
+          type: string
+          minLength: 1
+        payload_text:
+          type: string
+        observation_kind:
+          type: string
+          enum:
+          - observed
+          - reported
+        correlation_quality:
+          type: string
+          enum:
+          - exact
+          - correlated
+          - unknown
+      required:
+      - expected_revision
+      - source_event_id
+      - source_sequence
+      - occurred_at
+      - session_binding_id
+      - source_locator
+      - payload_sha256
+      - payload_media_type
+      - payload_text
+      - observation_kind
+      - correlation_quality
+      additionalProperties: false
+    RegisterArtifactRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        logical_artifact_id:
+          anyOf:
+          - type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          - type: 'null'
+        title:
+          type: string
+          minLength: 1
+        media_type:
+          type: string
+          minLength: 1
+        version_label:
+          type: string
+          minLength: 1
+        asset_ref:
+          $ref: ./domain.schema.json#/$defs/AssetRef
+        expected_sha256:
+          anyOf:
+          - type: string
+            description: SHA-256 十六进制摘要。
+            pattern: ^[a-f0-9]{64}$
+          - type: 'null'
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - logical_artifact_id
+      - title
+      - media_type
+      - version_label
+      - asset_ref
+      - expected_sha256
+      - grant_id
+      additionalProperties: false
+    UploadArtifactRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+          description: 必须等于当前Project.revision；冲突返回409，不执行部分变更。
+        logical_artifact_id:
+          anyOf:
+          - type: string
+            description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+            pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+          - type: 'null'
+        title:
+          type: string
+          minLength: 1
+        media_type:
+          type: string
+          minLength: 1
+        version_label:
+          type: string
+          minLength: 1
+        file:
+          type: string
+          description: multipart文件字节；服务器计算hash和大小，普通格式限制最大50MiB。
+          contentMediaType: application/octet-stream
+        grant_id:
+          type: string
+          description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+          pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      required:
+      - expected_revision
+      - logical_artifact_id
+      - title
+      - media_type
+      - version_label
+      - file
+      - grant_id
+      additionalProperties: false
+  parameters:
+    ProjectId:
+      name: project_id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+        pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+      description: 项目隔离边界；授权必须覆盖该项目。
+    EntityId:
+      name: entity_id
+      in: path
+      required: true
+      schema:
+        type: string
+        description: 稳定且项目内唯一的可读前缀标识；重命名不改变标识。
+        pattern: ^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+      description: 同principal+project+operation下唯一；同键同请求返回原结果，同键不同请求返回409。
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+      description: 服务端返回的不可解读游标，不允许跨项目复用。
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+  securitySchemes:
+    userSession:
+      type: apiKey
+      in: cookie
+      name: research_session
+      description: 本地用户会话；HttpOnly、SameSite、随机会话凭证。网络隔离不能替代身份认证。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: 用户写入请求必须匹配会话CSRF令牌及允许Origin。
+    serviceToken:
+      type: http
+      scheme: bearer
+      description: 登记适配器或MCP服务凭证；服务器绑定principal kind、project和scope。不得当作human身份。
+x-mcp-surface:
+  version: 1.0.0
+  tools:
+  - name: project_context
+    purpose: 读取已构建ContextBundle或请求受限派生；不修改批准状态。
+    mapped_operations:
+    - getContextBundle
+    - buildContext
+  - name: project_recall
+    purpose: 项目范围内检索；结果带有效性和来源。
+    mapped_operations:
+    - recallProject
+  - name: project_reading_brief
+    purpose: 读取或生成解释材料；不能替用户标记读懂。
+    mapped_operations:
+    - getReadingBrief
+    - createReadingBrief
+  - name: project_submit_proposal
+    purpose: 仅提交候选变化。
+    mapped_operations:
+    - submitProposal
+  forbidden:
+  - applyProposal
+  - createGrant
+  - revokeGrant
+  - createReview
+  - startManagedSession
+  - interruptSession
+  - direct_database_write
+  note: MCP工具列表不等于调用授权；所有请求继续由服务端验证身份、scope与版本。
+x-revision-semantics:
+  semantic_revision: Project.revision仅在有效研究状态或授权改变时递增。目标、约束、当前路线、已采用决定、主张评估、有效关系、研究单元状态与Grant是语义变更。
+  operational_revision: 原始事件、会话运行状态、实验心跳/指标、候选提案、ContextBundle、ReadingBrief仅递增各自实体revision与event_seq，不推进Project.revision。将运行结果正式纳入证据或采用其科学结论才是语义变更。
+  event_sequence: 每条成功提交的canonical event获得新event_seq；不同事件可有相同project_revision_after。完整事件的after_entities足以重建投影。
+  proposal_apply: Proposal.base_project_revision是原始输入快照。提交Proposal本身不改变Project.revision。apply检查当前请求expected_revision与target_revision_refs；输入较旧但目标和约束均未变化的提案可以在显式重校验后应用，不要求模型盲目重跑。
+  exceptions: 原始采集的expected_revision只作来源关联；派生内容的expected_revision固定输入快照。二者不得执行业务状态变化，旧结果明确标注版本。
+x-internal-policy-application:
+  entrypoint: applyAuthorizedProposal
+  exposed_over_http: false
+  exposed_to_mcp: false
+  caller: 内部确定性策略服务；不能由模型以serviceToken直接调用。
+  requirements:
+  - 引用已由用户明确授权且仍有效的Grant。
+  - Grant.subject_principal_ids必须包含内部服务；actions和scope覆盖全部commands。
+  - 常规变化可用policy_within_scope；目标、关键假设、主线和重要选择的自动应用必须policy_exact_proposal并绑定提案精确版本。
+  - 授权来源必须是当前用户的明确UI动作或经已登记活跃连接认证的明确user消息；旧聊天导入或assistant转述不自动产生授权。
+  - 在事务中检查Project与目标版本、命令范围、Grant有效性、关系与状态；授权内容变化时不自动扩大。
+  - 成功后Event.actor.kind=service、actor.grant_id指向原授权；不能伪装为human。
+  on_ambiguity: 保留候选并要求用户针对真正缺失的选择澄清；不为已经明确授权的同一范围重复询问。
+x-domain-command-contracts:
+  create_claim: 生成新Claim，assessment=unassessed；不能凭创建动作标supported。
+  revise_claim: 保留旧修订，创建新revision。hypothesis/assumption内容变更按assumption.change治理；其他类型按claim.revise。新修订原有证据边标needs_revalidation。
+  create_evidence: 来源存在性与hash由服务端检查，初始verification_status=not_checked。可缺资料但availability必须如实；人工陈述不得伪装论文或实验。
+  revise_evidence: 保留旧修订和定位，新资料创建新revision，已有精确证据关系不自动继承。
+  revise_research_unit: 修改问题、解释或完成条件，保留原修订；已finished单元的实质问题/条件改变须在同批命令中显式重开或给出新的完成依据，不能静默沿用旧completion。
+  split_research_unit: 没有活跃绑定时创建多个新单元，旧单元archived，保留原始事件和消息关联；添加旧单元到新单元的reorganizes_to边。资料可以多重引用，不能复制成新的独立证据。
+  merge_research_units: 要求同分支且所有源单元无活跃绑定；创建新单元、归档源单元、添加reorganizes_to边；不合并或删除原始证据身份。
+  merge_branches_selectively: 按selected_entity_refs的具体修订建新proposed分支并产生导入对应关系；原分支不变，不自动设主线。冲突决策有显式resolution或保留待定，不宣称自动解决科学矛盾。
+  correct_graph_edge: 保留旧关系修订，验证端点类型/修订/项目/无环约束后生成新修订；不得把仅时间相邻的活动改成已证实因果。
+  relation_semantics: continues_to是身份谱系，其余关系精确绑定端点revision；reorganizes_to只表达单元整理，不算科研进展。continues_to和reorganizes_to的联合谱系及depends_on各自要求无环。

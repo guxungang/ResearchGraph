@@ -1,0 +1,6106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://research-workbench.invalid/contracts/v1/domain.schema.json",
+  "title": "长期科研协作工作台领域合同",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "export_kind": {
+      "const": "project_snapshot"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "example_notice": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "event_history_scope": {
+      "type": "string",
+      "enum": [
+        "complete",
+        "excerpt",
+        "none"
+      ]
+    },
+    "last_event_seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "project": {
+      "$ref": "#/$defs/Project"
+    },
+    "branches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Branch"
+      },
+      "minItems": 0
+    },
+    "research_units": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ResearchUnit"
+      },
+      "minItems": 0
+    },
+    "graph_edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/GraphEdge"
+      },
+      "minItems": 0
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "minItems": 0
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      },
+      "minItems": 0
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Decision"
+      },
+      "minItems": 0
+    },
+    "artifact_versions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ArtifactVersion"
+      },
+      "minItems": 0
+    },
+    "experiment_runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ExperimentRun"
+      },
+      "minItems": 0
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Checkpoint"
+      },
+      "minItems": 0
+    },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Proposal"
+      },
+      "minItems": 0
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ReviewRecord"
+      },
+      "minItems": 0
+    },
+    "session_bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SessionBinding"
+      },
+      "minItems": 0
+    },
+    "capability_manifests": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CapabilityManifest"
+      },
+      "minItems": 0
+    },
+    "context_bundles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ContextBundle"
+      },
+      "minItems": 0
+    },
+    "reading_briefs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ReadingBrief"
+      },
+      "minItems": 0
+    },
+    "grants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Grant"
+      },
+      "minItems": 0
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Event"
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "export_kind",
+    "exported_at",
+    "example_notice",
+    "event_history_scope",
+    "last_event_seq",
+    "project",
+    "branches",
+    "research_units",
+    "graph_edges",
+    "claims",
+    "evidence",
+    "decisions",
+    "artifact_versions",
+    "experiment_runs",
+    "checkpoints",
+    "proposals",
+    "reviews",
+    "session_bindings",
+    "capability_manifests",
+    "context_bundles",
+    "reading_briefs",
+    "grants",
+    "events"
+  ],
+  "additionalProperties": false,
+  "description": "v1项目只读交换快照；示例文件仅含虚构资料。数据库事件表为运行真源，导出JSON/Markdown不直接回写。只有event_history_scope=complete的导出才声称提供完整可重放事件。",
+  "$defs": {
+    "Identifier": {
+      "type": "string",
+      "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+      "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+    },
+    "ValidTime": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "additionalProperties": false,
+      "description": "知识适用时间的半开区间 [from,to)；null 表示未知或无界，不等于没有限制。to 非空时必须晚于 from。记录时间另存 created_at/recorded_at。"
+    },
+    "ActorRef": {
+      "type": "object",
+      "properties": {
+        "principal_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "human",
+            "agent",
+            "service",
+            "importer"
+          ]
+        },
+        "authentication_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "principal_id",
+        "kind",
+        "authentication_ref",
+        "grant_id"
+      ],
+      "additionalProperties": false,
+      "description": "仅服务端根据已认证会话、适配器身份与授权生成。请求体不得提交或修改本对象。导入记录不能据此冒充当前人的批准。"
+    },
+    "TextSpan": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "UTF-8 解码后的 Unicode code point 偏移，包含。"
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "同一文本中的 code point 偏移，不包含。"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false,
+      "description": "end 必须大于 start。必须同时绑定精确内容 hash，避免改版后定位漂移。"
+    },
+    "SourceLocator": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "message"
+            },
+            "precision": {
+              "type": "string",
+              "enum": [
+                "exact",
+                "correlated",
+                "unavailable"
+              ]
+            },
+            "correlation_method": {
+              "type": "string",
+              "enum": [
+                "direct_id",
+                "content_hash",
+                "manual",
+                "time_window",
+                "semantic_match",
+                "none"
+              ]
+            },
+            "content_sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "SHA-256 十六进制摘要。",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "captured_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_instance_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "session_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "message_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "message_role": {
+              "type": "string",
+              "enum": [
+                "user",
+                "assistant",
+                "tool",
+                "system"
+              ]
+            },
+            "span": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TextSpan"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "precision",
+            "correlation_method",
+            "content_sha256",
+            "captured_at",
+            "description",
+            "source_instance_id",
+            "session_id",
+            "message_id",
+            "message_role",
+            "span"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "precision": {
+                    "const": "exact"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "content_sha256": {
+                    "type": "string",
+                    "description": "SHA-256 十六进制摘要。",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "file"
+            },
+            "precision": {
+              "type": "string",
+              "enum": [
+                "exact",
+                "correlated",
+                "unavailable"
+              ]
+            },
+            "correlation_method": {
+              "type": "string",
+              "enum": [
+                "direct_id",
+                "content_hash",
+                "manual",
+                "time_window",
+                "semantic_match",
+                "none"
+              ]
+            },
+            "content_sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "SHA-256 十六进制摘要。",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "captured_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "artifact_version_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "relative_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "page_number": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "section": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "span": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TextSpan"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "precision",
+            "correlation_method",
+            "content_sha256",
+            "captured_at",
+            "description",
+            "artifact_version_id",
+            "relative_path",
+            "page_number",
+            "section",
+            "span"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "precision": {
+                    "const": "exact"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "content_sha256": {
+                    "type": "string",
+                    "description": "SHA-256 十六进制摘要。",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "web"
+            },
+            "precision": {
+              "type": "string",
+              "enum": [
+                "exact",
+                "correlated",
+                "unavailable"
+              ]
+            },
+            "correlation_method": {
+              "type": "string",
+              "enum": [
+                "direct_id",
+                "content_hash",
+                "manual",
+                "time_window",
+                "semantic_match",
+                "none"
+              ]
+            },
+            "content_sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "SHA-256 十六进制摘要。",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "captured_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "accessed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "section": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "archived_artifact_version_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "span": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/TextSpan"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "precision",
+            "correlation_method",
+            "content_sha256",
+            "captured_at",
+            "description",
+            "url",
+            "title",
+            "accessed_at",
+            "section",
+            "archived_artifact_version_id",
+            "span"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "precision": {
+                    "const": "exact"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "content_sha256": {
+                    "type": "string",
+                    "description": "SHA-256 十六进制摘要。",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "experiment"
+            },
+            "precision": {
+              "type": "string",
+              "enum": [
+                "exact",
+                "correlated",
+                "unavailable"
+              ]
+            },
+            "correlation_method": {
+              "type": "string",
+              "enum": [
+                "direct_id",
+                "content_hash",
+                "manual",
+                "time_window",
+                "semantic_match",
+                "none"
+              ]
+            },
+            "content_sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "SHA-256 十六进制摘要。",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "captured_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "experiment_run_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "artifact_version_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "metric_name": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "record_path": {
+              "type": "string",
+              "description": "JSON Pointer、表格单元格或日志行等精确位置；无定位必须 precision=unavailable。",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "precision",
+            "correlation_method",
+            "content_sha256",
+            "captured_at",
+            "description",
+            "experiment_run_id",
+            "artifact_version_id",
+            "metric_name",
+            "record_path"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "precision": {
+                    "const": "exact"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "content_sha256": {
+                    "type": "string",
+                    "description": "SHA-256 十六进制摘要。",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "provider_event"
+            },
+            "precision": {
+              "type": "string",
+              "enum": [
+                "exact",
+                "correlated",
+                "unavailable"
+              ]
+            },
+            "correlation_method": {
+              "type": "string",
+              "enum": [
+                "direct_id",
+                "content_hash",
+                "manual",
+                "time_window",
+                "semantic_match",
+                "none"
+              ]
+            },
+            "content_sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "SHA-256 十六进制摘要。",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "captured_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_instance_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "session_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_event_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tool_call_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "precision",
+            "correlation_method",
+            "content_sha256",
+            "captured_at",
+            "description",
+            "source_instance_id",
+            "session_id",
+            "source_event_id",
+            "tool_call_id"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "precision": {
+                    "const": "exact"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "content_sha256": {
+                    "type": "string",
+                    "description": "SHA-256 十六进制摘要。",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "user_action"
+            },
+            "precision": {
+              "type": "string",
+              "enum": [
+                "exact",
+                "correlated",
+                "unavailable"
+              ]
+            },
+            "correlation_method": {
+              "type": "string",
+              "enum": [
+                "direct_id",
+                "content_hash",
+                "manual",
+                "time_window",
+                "semantic_match",
+                "none"
+              ]
+            },
+            "content_sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "SHA-256 十六进制摘要。",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "captured_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "action_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "ui_surface": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "precision",
+            "correlation_method",
+            "content_sha256",
+            "captured_at",
+            "description",
+            "action_id",
+            "ui_surface",
+            "request_id"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "原始来源定位。exact 必须有稳定ID与内容摘要或经鉴权的操作ID；correlated 仅表示关联推断，不能显示为精确原始证据。"
+    },
+    "Provenance": {
+      "type": "object",
+      "properties": {
+        "observation_kind": {
+          "type": "string",
+          "enum": [
+            "observed",
+            "reported",
+            "inferred"
+          ]
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceLocator"
+          },
+          "minItems": 1
+        },
+        "created_by": {
+          "$ref": "#/$defs/ActorRef"
+        },
+        "derivation_note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "observation_kind",
+        "source_refs",
+        "created_by",
+        "derivation_note"
+      ],
+      "additionalProperties": false,
+      "description": "observed 是直接采集事件或原始文件，reported 是他人陈述，inferred 是模型或规则推断；这些分类均不自动证明科学结论正确。"
+    },
+    "AcceptanceCriterion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_evidence_kind": {
+          "type": "string",
+          "enum": [
+            "source",
+            "experiment",
+            "artifact",
+            "human_review",
+            "automated_check"
+          ]
+        },
+        "mandatory": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "required_evidence_kind",
+        "mandatory"
+      ],
+      "additionalProperties": false
+    },
+    "DecisionOption": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_benefit": {
+          "type": "string"
+        },
+        "cost_and_risk": {
+          "type": "string"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "description",
+        "expected_benefit",
+        "cost_and_risk",
+        "evidence_ids"
+      ],
+      "additionalProperties": false
+    },
+    "RevisionRef": {
+      "type": "object",
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "entity_id",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "AssetRef": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "local",
+            "external",
+            "content_addressed"
+          ]
+        },
+        "location": {
+          "type": "string",
+          "description": "不可含认证令牌或签名下载凭证；本地采用受管理目录内相对路径或别名。",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "location"
+      ],
+      "additionalProperties": false
+    },
+    "Project": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^prj_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "有效研究状态或授权变化时递增的项目语义版本；原始日志、运行心跳、候选提案和派生解释不会推进该版本。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "goal": {
+          "type": "string",
+          "description": "项目最终研究目标；重大变更须具有有效授权。",
+          "minLength": 1
+        },
+        "problem_statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "in_scope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "out_of_scope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "source_ref": {
+                "$ref": "#/$defs/SourceLocator"
+              }
+            },
+            "required": [
+              "id",
+              "text",
+              "source_ref"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "main_branch_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "focus_unit_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "paused",
+            "archived"
+          ]
+        },
+        "language": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "name",
+        "goal",
+        "problem_statement",
+        "in_scope",
+        "out_of_scope",
+        "constraints",
+        "main_branch_id",
+        "focus_unit_id",
+        "status",
+        "language",
+        "timezone"
+      ],
+      "additionalProperties": false,
+      "description": "项目研究边界。project_id 必须等于 id。revision 同时作为所有项目命令的乐观并发版本。Goal 是字段，不另建图节点实体。"
+    },
+    "Branch": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^brn_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "active",
+            "paused",
+            "closed"
+          ]
+        },
+        "derived_from_branch_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "base_unit_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "base_checkpoint_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "effective_decision_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "open_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "closure_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "name",
+        "purpose",
+        "state",
+        "derived_from_branch_id",
+        "base_unit_id",
+        "base_checkpoint_id",
+        "context_revision",
+        "effective_decision_ids",
+        "open_claim_ids",
+        "closure_reason"
+      ],
+      "additionalProperties": false,
+      "description": "研究路线及其有效上下文。创建代码工作区为可选操作，研究分支不与Git分支强制一一对应。"
+    },
+    "ResearchUnit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^unt_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "branch_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "work_state": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "active",
+            "blocked",
+            "paused",
+            "finished",
+            "archived"
+          ]
+        },
+        "parent_unit_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0,
+          "readOnly": true,
+          "description": "由 continues_to 入边派生的只读投影；不作为第二套关系真源。"
+        },
+        "claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "decision_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "artifact_version_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcceptanceCriterion"
+          },
+          "minItems": 0
+        },
+        "blocker": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next_action": {
+          "type": "string"
+        },
+        "owner_principal_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "completion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UnitCompletion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "branch_id",
+        "title",
+        "question",
+        "purpose",
+        "work_state",
+        "parent_unit_ids",
+        "claim_ids",
+        "decision_ids",
+        "evidence_ids",
+        "artifact_version_ids",
+        "acceptance_criteria",
+        "blocker",
+        "next_action",
+        "owner_principal_id",
+        "completion"
+      ],
+      "additionalProperties": false,
+      "description": "具有独立科研问题和结果的工作单元。finished 只表示该单元工作结束，不代表主张已证实、用户已读懂或审阅通过。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "work_state": {
+                "const": "finished"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "completion": {
+                "$ref": "#/$defs/UnitCompletion"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "work_state": {
+                "const": "blocked"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "blocker": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "GraphEdge": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^edg_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "source_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "target_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "continues_to",
+            "depends_on",
+            "supports",
+            "contradicts",
+            "supersedes",
+            "uses",
+            "produces",
+            "reorganizes_to"
+          ]
+        },
+        "branch_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "active",
+            "superseded"
+          ]
+        },
+        "source_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "建立关系时明确引用的源实体修订。"
+        },
+        "target_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "建立关系时明确引用的目标实体修订。"
+        },
+        "binding_semantics": {
+          "type": "string",
+          "enum": [
+            "identity_lineage",
+            "exact_revision"
+          ]
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "current",
+            "needs_revalidation",
+            "historical"
+          ],
+          "readOnly": true,
+          "description": "精确修订关系的端点更新时显示needs_revalidation，不自动继承为新修订的有效证据。谱系关系保留历史身份关联。"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "source_id",
+        "target_id",
+        "relation",
+        "branch_id",
+        "rationale",
+        "state",
+        "source_revision",
+        "target_revision",
+        "binding_semantics",
+        "currency"
+      ],
+      "additionalProperties": false,
+      "description": "有类型关系。continues_to 从前驱单元指向后继；depends_on 从工作单元指向前提；supports/contradicts 从Evidence指向Claim；supersedes 从新Decision指向旧Decision；uses 从单元指向资料或决策；produces 从单元指向成果。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "relation": {
+                "const": "continues_to"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "binding_semantics": {
+                "const": "identity_lineage"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "binding_semantics": {
+                "const": "exact_revision"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Claim": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^clm_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim_kind": {
+          "type": "string",
+          "enum": [
+            "hypothesis",
+            "finding",
+            "assumption",
+            "paper_claim"
+          ]
+        },
+        "assessment": {
+          "type": "string",
+          "enum": [
+            "unassessed",
+            "supported",
+            "contradicted",
+            "mixed",
+            "inconclusive",
+            "withdrawn"
+          ]
+        },
+        "conditions": {
+          "type": "string",
+          "description": "适用数据、模型、实验条件和不确定性边界。",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "assessed_by_review_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "supersedes_claim_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "branch_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "text",
+        "claim_kind",
+        "assessment",
+        "conditions",
+        "evidence_ids",
+        "assessed_by_review_ids",
+        "supersedes_claim_id",
+        "branch_ids"
+      ],
+      "additionalProperties": false,
+      "description": "科学主张、假设或建模前提。状态不能从进程退出码、节点完成或用户点击阅读自动推导。修改关键假设需有效 grant。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "assessment": {
+                "enum": [
+                  "supported",
+                  "contradicted",
+                  "mixed"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evidence_ids": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Evidence": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^evd_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_kind": {
+          "type": "string",
+          "enum": [
+            "paper",
+            "experiment_result",
+            "code_inspection",
+            "derivation",
+            "dataset",
+            "test_result",
+            "user_statement"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "artifact_version_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "experiment_run_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limitations": {
+          "type": "string"
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "available",
+            "partial",
+            "missing",
+            "external_unchecked"
+          ]
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "not_checked",
+            "source_checked",
+            "reproduced",
+            "disputed"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "title",
+        "evidence_kind",
+        "statement",
+        "source_locator",
+        "artifact_version_ids",
+        "experiment_run_id",
+        "scope",
+        "limitations",
+        "availability",
+        "verification_status"
+      ],
+      "additionalProperties": false,
+      "description": "带可追溯来源的证据。source_checked 仅表示来源核对，不等于支持任意主张。"
+    },
+    "Decision": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^dec_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DecisionOption"
+          },
+          "minItems": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "accepted",
+            "rejected",
+            "superseded"
+          ]
+        },
+        "accepted_option_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "branch_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 1
+        },
+        "authorized_by_grant_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acceptance_source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceLocator"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "superseded_by_decision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reconsider_when": {
+          "type": "string"
+        },
+        "authorization_grant_revision": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "accepted_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "question",
+        "options",
+        "status",
+        "accepted_option_id",
+        "rationale",
+        "evidence_ids",
+        "branch_ids",
+        "authorized_by_grant_id",
+        "acceptance_source",
+        "superseded_by_decision_id",
+        "reconsider_when",
+        "authorization_grant_revision",
+        "accepted_at"
+      ],
+      "additionalProperties": false,
+      "description": "当前选择及历史依据。accepted 必须有存在且覆盖对应动作和范围的有效授权；AI建议和导入历史不能自行升级为当前用户批准。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "accepted"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "accepted_option_id": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "authorized_by_grant_id": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "authorization_grant_revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "accepted_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "acceptance_source": {
+                "$ref": "#/$defs/SourceLocator"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "proposed",
+                  "rejected"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "accepted_option_id": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "superseded"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "superseded_by_decision_id": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ArtifactVersion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^art_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "logical_artifact_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storage_ref": {
+          "$ref": "#/$defs/AssetRef"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "SHA-256 十六进制摘要。",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "byte_size": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "available",
+            "missing",
+            "external_unchecked"
+          ]
+        },
+        "previous_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "produced_by_unit_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version_pinning": {
+          "type": "string",
+          "enum": [
+            "content_verified",
+            "metadata_only",
+            "unknown"
+          ],
+          "description": "外部引用尚未取得字节时不能伪造hash；此时只能metadata_only或unknown，不宣称内容版本已固定。"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "logical_artifact_id",
+        "title",
+        "media_type",
+        "version_label",
+        "storage_ref",
+        "sha256",
+        "byte_size",
+        "availability",
+        "previous_version_id",
+        "produced_by_unit_id",
+        "version_pinning"
+      ],
+      "additionalProperties": false,
+      "description": "不可变成果版本。内容改变需新建ArtifactVersion；不能原地替换hash。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "const": "available"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "description": "SHA-256 十六进制摘要。",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "byte_size": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "version_pinning": {
+                "const": "content_verified"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Metric": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "split": {
+          "type": "string"
+        },
+        "aggregation": {
+          "type": "string"
+        },
+        "sample_count": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "higher_better",
+            "lower_better",
+            "descriptive"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "unit",
+        "split",
+        "aggregation",
+        "sample_count",
+        "direction"
+      ],
+      "additionalProperties": false
+    },
+    "ExperimentRun": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^run_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "unit_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "branch_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "run_state": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancel_requested",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "command_display": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code_commit": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40,64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "config_artifact_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dataset_artifact_version_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "environment_artifact_version_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "random_seeds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 0
+        },
+        "comparison_group_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "external_job_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ended_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "exit_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Metric"
+          },
+          "minItems": 0
+        },
+        "output_artifact_version_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "source_locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "capture_completeness": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "unknown"
+          ]
+        },
+        "missing_fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "unit_id",
+        "branch_id",
+        "run_state",
+        "command_display",
+        "code_commit",
+        "config_artifact_version_id",
+        "dataset_artifact_version_ids",
+        "environment_artifact_version_id",
+        "random_seeds",
+        "comparison_group_id",
+        "external_job_id",
+        "started_at",
+        "ended_at",
+        "last_observed_at",
+        "exit_code",
+        "metrics",
+        "output_artifact_version_ids",
+        "source_locator",
+        "capture_completeness",
+        "missing_fields"
+      ],
+      "additionalProperties": false,
+      "description": "单次实际运行。succeeded 表示进程成功结束，不自动通过科学审查；远端断连使用unknown，取消请求等待终态。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "capture_completeness": {
+                "const": "complete"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config_artifact_version_id": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "environment_artifact_version_id": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "missing_fields": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CheckpointFile": {
+      "type": "object",
+      "properties": {
+        "artifact_version_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "relative_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "SHA-256 十六进制摘要。",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "restore_role": {
+          "type": "string",
+          "enum": [
+            "source",
+            "document",
+            "config",
+            "environment",
+            "data",
+            "output",
+            "untracked"
+          ]
+        },
+        "availability": {
+          "type": "string",
+          "enum": [
+            "available",
+            "missing",
+            "external_unchecked"
+          ]
+        }
+      },
+      "required": [
+        "artifact_version_id",
+        "relative_path",
+        "sha256",
+        "restore_role",
+        "availability"
+      ],
+      "additionalProperties": false
+    },
+    "Checkpoint": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ckp_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "branch_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "unit_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "project_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "branch_context_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "entity_revision_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RevisionRef"
+          },
+          "minItems": 1
+        },
+        "effective_decision_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "known_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "file_manifest": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CheckpointFile"
+          },
+          "minItems": 0
+        },
+        "git_snapshot": {
+          "type": "object",
+          "properties": {
+            "repository_alias": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "commit_sha": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{40,64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "dirty_patch_artifact_version_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "untracked_artifact_version_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "repository_alias",
+            "commit_sha",
+            "dirty_patch_artifact_version_id",
+            "untracked_artifact_version_ids"
+          ],
+          "additionalProperties": false
+        },
+        "restore_readiness": {
+          "type": "string",
+          "enum": [
+            "ready",
+            "partial",
+            "knowledge_only"
+          ]
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "title",
+        "branch_id",
+        "unit_id",
+        "project_revision",
+        "branch_context_revision",
+        "entity_revision_refs",
+        "effective_decision_ids",
+        "known_claim_ids",
+        "file_manifest",
+        "git_snapshot",
+        "restore_readiness",
+        "limitations"
+      ],
+      "additionalProperties": false,
+      "description": "不可变认知和文件清单快照。恢复默认建立新分支，保留后续反证；缺文件必须显示partial或knowledge_only。"
+    },
+    "DomainCommand": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "update_goal"
+            },
+            "goal": {
+              "type": "string",
+              "minLength": 1
+            },
+            "problem_statement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "goal",
+            "problem_statement",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "create_research_unit"
+            },
+            "branch_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1
+            },
+            "parent_unit_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            },
+            "acceptance_criteria": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/AcceptanceCriterion"
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "kind",
+            "branch_id",
+            "title",
+            "question",
+            "purpose",
+            "parent_unit_ids",
+            "acceptance_criteria"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "update_work_state"
+            },
+            "unit_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "new_state": {
+              "type": "string",
+              "enum": [
+                "planned",
+                "active",
+                "blocked",
+                "paused",
+                "finished",
+                "archived"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "completion": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UnitCompletion"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "unit_id",
+            "new_state",
+            "reason",
+            "completion"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "new_state": {
+                    "const": "finished"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "completion": {
+                    "$ref": "#/$defs/UnitCompletion"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "assess_claim"
+            },
+            "claim_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "assessment": {
+              "type": "string",
+              "enum": [
+                "unassessed",
+                "supported",
+                "contradicted",
+                "mixed",
+                "inconclusive",
+                "withdrawn"
+              ]
+            },
+            "conditions": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            },
+            "review_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "claim_id",
+            "assessment",
+            "conditions",
+            "evidence_ids",
+            "review_ids",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "change_assumption"
+            },
+            "claim_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "new_text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "conditions": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "claim_id",
+            "new_text",
+            "conditions",
+            "evidence_ids",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "propose_decision"
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1
+            },
+            "options": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/DecisionOption"
+              },
+              "minItems": 1
+            },
+            "branch_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 1
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            },
+            "rationale": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "question",
+            "options",
+            "branch_ids",
+            "evidence_ids",
+            "rationale"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "decide_decision"
+            },
+            "decision_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "accepted",
+                "rejected"
+              ]
+            },
+            "accepted_option_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "decision_id",
+            "status",
+            "accepted_option_id",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "supersede_decision"
+            },
+            "decision_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "replacement_decision_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "decision_id",
+            "replacement_decision_id",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "change_main_branch"
+            },
+            "new_branch_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "new_branch_id",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "attach_evidence"
+            },
+            "unit_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "evidence_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "claim_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "relation": {
+              "type": "string",
+              "enum": [
+                "reference",
+                "supports",
+                "contradicts"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "unit_id",
+            "evidence_id",
+            "claim_id",
+            "relation",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "link_units"
+            },
+            "source_unit_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "target_unit_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "relation": {
+              "type": "string",
+              "enum": [
+                "continues_to",
+                "depends_on"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "source_unit_id",
+            "target_unit_id",
+            "relation",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "archive_branch"
+            },
+            "branch_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "branch_id",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "revise_research_unit"
+            },
+            "unit_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1
+            },
+            "acceptance_criteria": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/AcceptanceCriterion"
+              },
+              "minItems": 0
+            },
+            "next_action": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "unit_id",
+            "title",
+            "question",
+            "purpose",
+            "acceptance_criteria",
+            "next_action",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "create_claim"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "claim_kind": {
+              "type": "string",
+              "enum": [
+                "hypothesis",
+                "finding",
+                "assumption",
+                "paper_claim"
+              ]
+            },
+            "conditions": {
+              "type": "string",
+              "minLength": 1
+            },
+            "branch_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 1
+            },
+            "source_refs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SourceLocator"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "kind",
+            "text",
+            "claim_kind",
+            "conditions",
+            "branch_ids",
+            "source_refs"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "revise_claim"
+            },
+            "claim_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "conditions": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "claim_id",
+            "text",
+            "conditions",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "create_evidence"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_kind": {
+              "type": "string",
+              "enum": [
+                "paper",
+                "experiment_result",
+                "code_inspection",
+                "derivation",
+                "dataset",
+                "test_result",
+                "user_statement"
+              ]
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_locator": {
+              "$ref": "#/$defs/SourceLocator"
+            },
+            "artifact_version_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            },
+            "experiment_run_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1
+            },
+            "limitations": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "title",
+            "evidence_kind",
+            "statement",
+            "source_locator",
+            "artifact_version_ids",
+            "experiment_run_id",
+            "scope",
+            "limitations"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "revise_evidence"
+            },
+            "evidence_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_kind": {
+              "type": "string",
+              "enum": [
+                "paper",
+                "experiment_result",
+                "code_inspection",
+                "derivation",
+                "dataset",
+                "test_result",
+                "user_statement"
+              ]
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_locator": {
+              "$ref": "#/$defs/SourceLocator"
+            },
+            "artifact_version_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            },
+            "experiment_run_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1
+            },
+            "limitations": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "evidence_id",
+            "title",
+            "evidence_kind",
+            "statement",
+            "source_locator",
+            "artifact_version_ids",
+            "experiment_run_id",
+            "scope",
+            "limitations",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "split_research_unit"
+            },
+            "unit_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "question": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "claim_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                      "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                    },
+                    "minItems": 0
+                  },
+                  "decision_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                      "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                    },
+                    "minItems": 0
+                  },
+                  "evidence_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                      "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                    },
+                    "minItems": 0
+                  },
+                  "artifact_version_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                      "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                    },
+                    "minItems": 0
+                  },
+                  "source_event_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                      "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                    },
+                    "minItems": 0
+                  },
+                  "acceptance_criteria": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/AcceptanceCriterion"
+                    },
+                    "minItems": 0
+                  }
+                },
+                "required": [
+                  "title",
+                  "question",
+                  "purpose",
+                  "claim_ids",
+                  "decision_ids",
+                  "evidence_ids",
+                  "artifact_version_ids",
+                  "source_event_ids",
+                  "acceptance_criteria"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 2,
+              "maxItems": 20
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "unit_id",
+            "parts",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "merge_research_units"
+            },
+            "unit_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 2,
+              "maxItems": 20
+            },
+            "merged_unit": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "purpose": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "claim_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "minItems": 0
+                },
+                "decision_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "minItems": 0
+                },
+                "evidence_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "minItems": 0
+                },
+                "artifact_version_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "minItems": 0
+                },
+                "source_event_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "minItems": 0
+                },
+                "acceptance_criteria": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/AcceptanceCriterion"
+                  },
+                  "minItems": 0
+                }
+              },
+              "required": [
+                "title",
+                "question",
+                "purpose",
+                "claim_ids",
+                "decision_ids",
+                "evidence_ids",
+                "artifact_version_ids",
+                "source_event_ids",
+                "acceptance_criteria"
+              ],
+              "additionalProperties": false
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "unit_ids",
+            "merged_unit",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "merge_branches_selectively"
+            },
+            "source_branch_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 2,
+              "maxItems": 20
+            },
+            "new_branch_name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "purpose": {
+              "type": "string",
+              "minLength": 1
+            },
+            "selected_entity_refs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/RevisionRef"
+              },
+              "minItems": 1
+            },
+            "decision_resolutions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "conflicting_decision_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                      "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                    },
+                    "minItems": 2
+                  },
+                  "selected_decision_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                        "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rationale": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "conflicting_decision_ids",
+                  "selected_decision_id",
+                  "rationale"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "source_branch_ids",
+            "new_branch_name",
+            "purpose",
+            "selected_entity_refs",
+            "decision_resolutions",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "correct_graph_edge"
+            },
+            "edge_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "source_ref": {
+              "$ref": "#/$defs/RevisionRef"
+            },
+            "target_ref": {
+              "$ref": "#/$defs/RevisionRef"
+            },
+            "relation": {
+              "type": "string",
+              "enum": [
+                "continues_to",
+                "depends_on",
+                "supports",
+                "contradicts",
+                "supersedes",
+                "uses",
+                "produces",
+                "reorganizes_to"
+              ]
+            },
+            "branch_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "edge_id",
+            "source_ref",
+            "target_ref",
+            "relation",
+            "branch_id",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "v1允许的业务变更命令；不存在任意SQL、任意JSONPatch或伪造actor的接口。新增命令必须新版本且保持权限与状态不变量。"
+    },
+    "Proposal": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^pro_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "candidate",
+            "ready",
+            "applied",
+            "rejected",
+            "stale"
+          ]
+        },
+        "base_project_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "target_revision_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RevisionRef"
+          },
+          "minItems": 0
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DomainCommand"
+          },
+          "minItems": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "expected_impact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "risk_and_uncertainty": {
+          "type": "string"
+        },
+        "requested_grant_actions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "created_by": {
+          "$ref": "#/$defs/ActorRef"
+        },
+        "applied_by_event_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "title",
+        "summary",
+        "status",
+        "base_project_revision",
+        "target_revision_refs",
+        "commands",
+        "evidence_ids",
+        "expected_impact",
+        "risk_and_uncertainty",
+        "requested_grant_actions",
+        "created_by",
+        "applied_by_event_id"
+      ],
+      "additionalProperties": false,
+      "description": "模型、规则和人均可提出。提交不执行。HTTP apply仅允许鉴权的人类请求；内部确定性策略服务可在既有有效Grant内应用，模型不能取得该入口。授权与版本校验在服务器执行。target_revision_refs集中保存本批命令涉及的目标与依赖读集，不由每条命令重复提供；服务端检查读集完整性。"
+    },
+    "ReviewRecord": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^rev_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "target_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "reviewed_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "review_kind": {
+          "type": "string",
+          "enum": [
+            "user_review",
+            "scientific_review",
+            "implementation_review",
+            "automated_check"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "unreviewed",
+            "needs_changes",
+            "accepted"
+          ]
+        },
+        "reviewer": {
+          "$ref": "#/$defs/ActorRef"
+        },
+        "understanding_status": {
+          "type": "string",
+          "enum": [
+            "not_reported",
+            "needs_explanation",
+            "self_reported_understood"
+          ]
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "is_current": {
+          "type": "boolean",
+          "readOnly": true
+        },
+        "source_revision_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RevisionRef"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "target_id",
+        "reviewed_revision",
+        "review_kind",
+        "status",
+        "reviewer",
+        "understanding_status",
+        "findings",
+        "evidence_ids",
+        "is_current",
+        "source_revision_refs"
+      ],
+      "additionalProperties": false,
+      "description": "审阅针对精确版本；is_current由当前实体版本计算。打开页面、采纳建议或运行结束都不自动产生accepted/understood。"
+    },
+    "SessionBinding": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ses_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "connection_mode": {
+          "type": "string",
+          "enum": [
+            "archive",
+            "sidecar",
+            "managed"
+          ]
+        },
+        "harness_instance_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "provider_session_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider_turn_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "branch_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "context_bundle_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "worktree_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "base_project_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "binding_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "running",
+            "interrupt_requested",
+            "interrupted",
+            "completed",
+            "failed",
+            "unknown"
+          ]
+        },
+        "last_observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "type": "string",
+          "enum": [
+            "complete_for_declared_scope",
+            "partial",
+            "unknown"
+          ]
+        },
+        "coverage_note": {
+          "type": "string"
+        },
+        "interrupt_request_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interrupt_confirmed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "connection_mode",
+        "harness_instance_id",
+        "provider_session_id",
+        "provider_turn_id",
+        "unit_id",
+        "branch_id",
+        "context_bundle_id",
+        "worktree_ref",
+        "base_project_revision",
+        "binding_revision",
+        "state",
+        "last_observed_at",
+        "coverage",
+        "coverage_note",
+        "interrupt_request_id",
+        "interrupt_confirmed_at"
+      ],
+      "additionalProperties": false,
+      "description": "活跃执行绑定不可因UI选中另一节点而改变。旧turn迟到事件仍归旧绑定；redirect通过新绑定实现。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "interrupted"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "interrupt_request_id": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "interrupt_confirmed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CapabilityValue": {
+      "type": "object",
+      "properties": {
+        "support": {
+          "type": "string",
+          "enum": [
+            "supported",
+            "partial",
+            "unsupported",
+            "unverified"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "evidence_urls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "minItems": 0
+        },
+        "probed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "support",
+        "scope",
+        "limitations",
+        "evidence_urls",
+        "probed_at"
+      ],
+      "additionalProperties": false
+    },
+    "CapabilityManifest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^cap_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "harness_instance_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "codex",
+            "claude_code",
+            "generic_import"
+          ]
+        },
+        "surface": {
+          "type": "string",
+          "enum": [
+            "cli",
+            "desktop",
+            "ide",
+            "app_server",
+            "agent_sdk",
+            "import"
+          ]
+        },
+        "provider_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "adapter_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "protocol_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "connection_mode": {
+          "type": "string",
+          "enum": [
+            "archive",
+            "sidecar",
+            "managed"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "connected",
+            "disconnected",
+            "degraded",
+            "unverified"
+          ]
+        },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "readHistory": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "observeMessages": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "observeTools": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "injectAtSessionStart": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "injectAtUserPrompt": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "injectAfterCompaction": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "createSession": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "resumeSession": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "forkSession": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "steerTurn": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "interruptTurn": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "mediateToolApproval": {
+              "$ref": "#/$defs/CapabilityValue"
+            },
+            "checkpointFiles": {
+              "$ref": "#/$defs/CapabilityValue"
+            }
+          },
+          "required": [
+            "readHistory",
+            "observeMessages",
+            "observeTools",
+            "injectAtSessionStart",
+            "injectAtUserPrompt",
+            "injectAfterCompaction",
+            "createSession",
+            "resumeSession",
+            "forkSession",
+            "steerTurn",
+            "interruptTurn",
+            "mediateToolApproval",
+            "checkpointFiles"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "harness_instance_id",
+        "provider",
+        "surface",
+        "provider_version",
+        "adapter_version",
+        "protocol_version",
+        "connection_mode",
+        "status",
+        "capabilities"
+      ],
+      "additionalProperties": false,
+      "description": "功能声明基于实际版本、连接与可复现探测；不可由品牌推定能力。未探测的功能必须unverified。"
+    },
+    "ContextItem": {
+      "type": "object",
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "goal",
+            "constraint",
+            "decision",
+            "evidence",
+            "question",
+            "recent_state",
+            "counterevidence"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceLocator"
+          },
+          "minItems": 1
+        },
+        "validity_note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "entity_id",
+        "revision",
+        "role",
+        "text",
+        "source_refs",
+        "validity_note"
+      ],
+      "additionalProperties": false
+    },
+    "ContextBundle": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^ctx_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "branch_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "unit_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "branch_context_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "built_for": {
+          "type": "string",
+          "enum": [
+            "session_start",
+            "user_prompt",
+            "after_compaction",
+            "manual_handoff"
+          ]
+        },
+        "base_project_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ContextItem"
+          },
+          "minItems": 1
+        },
+        "excluded_items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entity_id": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "entity_id",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "token_budget": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "estimated_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "token_measurement": {
+          "type": "string",
+          "enum": [
+            "provider_counted",
+            "estimated"
+          ]
+        },
+        "snapshot_mode": {
+          "type": "string",
+          "enum": [
+            "current_valid",
+            "historical_reconstruction"
+          ]
+        },
+        "counterevidence_included": {
+          "type": "boolean"
+        },
+        "sha256": {
+          "type": "string",
+          "description": "SHA-256 十六进制摘要。",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "history_basis": {
+          "type": "string",
+          "enum": [
+            "not_applicable",
+            "recorded_at",
+            "source_occurred_at"
+          ]
+        },
+        "as_of_time": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "history_label": {
+          "type": "string",
+          "enum": [
+            "current_valid",
+            "recorded_history",
+            "reconstructed_history"
+          ]
+        },
+        "reconstruction_note": {
+          "type": "string"
+        },
+        "generation": {
+          "$ref": "#/$defs/GenerationInfo"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "branch_id",
+        "unit_id",
+        "branch_context_revision",
+        "built_for",
+        "base_project_revision",
+        "items",
+        "excluded_items",
+        "token_budget",
+        "estimated_tokens",
+        "token_measurement",
+        "snapshot_mode",
+        "counterevidence_included",
+        "sha256",
+        "history_basis",
+        "as_of_time",
+        "history_label",
+        "reconstruction_note",
+        "generation"
+      ],
+      "additionalProperties": false,
+      "description": "一次已构建的不可变上下文包。历史重建与当前有效知识分开，后来反证不能因回退默认删除。记录实际送入版本而非声称模型已理解。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "snapshot_mode": {
+                "const": "historical_reconstruction"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "history_basis": {
+                "type": "string",
+                "enum": [
+                  "recorded_at",
+                  "source_occurred_at"
+                ]
+              },
+              "as_of_time": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "history_label": {
+                "type": "string",
+                "enum": [
+                  "recorded_history",
+                  "reconstructed_history"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "history_basis": {
+                "const": "source_occurred_at"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "history_label": {
+                "const": "reconstructed_history"
+              },
+              "reconstruction_note": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BriefEvidenceLink": {
+      "type": "object",
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relationship": {
+          "type": "string",
+          "enum": [
+            "supports",
+            "contradicts",
+            "background",
+            "limitation"
+          ]
+        },
+        "source_locator": {
+          "$ref": "#/$defs/SourceLocator"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "label",
+        "relationship",
+        "source_locator"
+      ],
+      "additionalProperties": false
+    },
+    "ReadingBrief": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^brf_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "unit_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "audience": {
+          "type": "string",
+          "enum": [
+            "general_researcher",
+            "domain_familiar",
+            "implementation_familiar"
+          ]
+        },
+        "source_revision_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RevisionRef"
+          },
+          "minItems": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "project_background": {
+          "type": "string",
+          "minLength": 1
+        },
+        "why_this_work": {
+          "type": "string",
+          "minLength": 1
+        },
+        "current_question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": {
+                "type": "string",
+                "minLength": 1
+              },
+              "plain_explanation": {
+                "type": "string",
+                "minLength": 1
+              },
+              "why_needed": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "term",
+              "plain_explanation",
+              "why_needed"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "method_explanation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "key_findings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0,
+          "maxItems": 3
+        },
+        "not_yet_established": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "implementation_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "what_changed": {
+                "type": "string",
+                "minLength": 1
+              },
+              "why": {
+                "type": "string",
+                "minLength": 1
+              },
+              "artifact_version_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                "minItems": 0
+              }
+            },
+            "required": [
+              "what_changed",
+              "why",
+              "artifact_version_ids"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "project_impact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recommended_next_step": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision_request": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "proposal_id": {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minItems": 2
+                }
+              },
+              "required": [
+                "question",
+                "proposal_id",
+                "options"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BriefEvidenceLink"
+          },
+          "minItems": 0
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "readability_checks": {
+          "type": "object",
+          "properties": {
+            "unexplained_terms": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 0
+            },
+            "unresolved_references": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 0
+            },
+            "source_gaps": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 0
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pass",
+                "needs_revision",
+                "not_checked"
+              ]
+            }
+          },
+          "required": [
+            "unexplained_terms",
+            "unresolved_references",
+            "source_gaps",
+            "status"
+          ],
+          "additionalProperties": false
+        },
+        "generation": {
+          "$ref": "#/$defs/GenerationInfo"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "unit_id",
+        "audience",
+        "source_revision_refs",
+        "title",
+        "project_background",
+        "why_this_work",
+        "current_question",
+        "prerequisites",
+        "method_explanation",
+        "key_findings",
+        "not_yet_established",
+        "implementation_changes",
+        "project_impact",
+        "recommended_next_step",
+        "decision_request",
+        "evidence_links",
+        "limitations",
+        "readability_checks",
+        "generation"
+      ],
+      "additionalProperties": false,
+      "description": "可独立阅读的解释层，补足背景和术语。不得用短摘要替代原始证据；结构检查通过不等于人类已经理解。"
+    },
+    "Grant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^grt_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "实体版本，从1开始；对业务内容修改递增。"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "revoked",
+            "expired"
+          ]
+        },
+        "subject_principal_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 1
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "goal.change",
+              "assumption.change",
+              "decision.accept",
+              "decision.reject",
+              "decision.supersede",
+              "branch.promote",
+              "branch.create",
+              "branch.archive",
+              "branch.merge",
+              "unit.create",
+              "unit.update",
+              "unit.revise",
+              "unit.reorganize",
+              "claim.create",
+              "claim.revise",
+              "claim.assess",
+              "evidence.create",
+              "evidence.revise",
+              "evidence.attach",
+              "artifact.register",
+              "graph.link",
+              "graph.correct",
+              "checkpoint.create",
+              "session.start",
+              "session.interrupt",
+              "review.record"
+            ]
+          },
+          "minItems": 1
+        },
+        "scope": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "project"
+                },
+                "project_id": {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                }
+              },
+              "required": [
+                "kind",
+                "project_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "branches"
+                },
+                "project_id": {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                "branch_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "kind",
+                "project_id",
+                "branch_ids"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "units"
+                },
+                "project_id": {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                "unit_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "kind",
+                "project_id",
+                "unit_ids"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "const": "proposal"
+                },
+                "project_id": {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                "proposal_id": {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                "proposal_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "kind",
+                "project_id",
+                "proposal_id",
+                "proposal_revision"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "issued_by": {
+          "$ref": "#/$defs/ActorRef"
+        },
+        "authorization_source": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_cost_usd": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "application_policy": {
+          "type": "string",
+          "enum": [
+            "human_only",
+            "policy_within_scope",
+            "policy_exact_proposal"
+          ],
+          "description": "human_only由人发起应用；policy_within_scope由确定性内部服务应用授权范围内常规变化；policy_exact_proposal只应用用户明确绑定版本的提案。任何模式均不开放模型apply权限。"
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "created_at",
+        "updated_at",
+        "valid_time",
+        "provenance",
+        "status",
+        "subject_principal_ids",
+        "actions",
+        "scope",
+        "issued_by",
+        "authorization_source",
+        "expires_at",
+        "max_cost_usd",
+        "revoked_at",
+        "reason",
+        "application_policy"
+      ],
+      "additionalProperties": false,
+      "description": "服务端验证的用户授权。首次授权之后在范围内复用，避免重复询问；不能由代理自行创建或扩大。权限范围不覆盖操作系统或上游平台禁令。",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "application_policy": {
+                "const": "policy_exact_proposal"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "const": "proposal"
+                  },
+                  "project_id": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "proposal_id": {
+                    "type": "string",
+                    "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                    "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                  },
+                  "proposal_revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "project_id",
+                  "proposal_id",
+                  "proposal_revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Event": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^evt_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "revision": {
+          "const": 1
+        },
+        "project_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "event_seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "project_revision_after": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "事件提交后的项目语义版本；多个非语义事件可以保持相同值。event_seq仍对每次成功追加单调递增。"
+        },
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "project.created",
+            "project.changed",
+            "unit.created",
+            "unit.changed",
+            "branch.created",
+            "branch.changed",
+            "claim.changed",
+            "evidence.registered",
+            "decision.proposed",
+            "decision.accepted",
+            "decision.rejected",
+            "decision.superseded",
+            "artifact.registered",
+            "experiment.observed",
+            "checkpoint.created",
+            "proposal.submitted",
+            "proposal.applied",
+            "proposal.rejected",
+            "review.recorded",
+            "session.bound",
+            "session.started",
+            "session.interrupt_requested",
+            "session.ended",
+            "session.observed",
+            "capability.probed",
+            "context.built",
+            "brief.created",
+            "grant.issued",
+            "grant.revoked",
+            "source.ingested",
+            "relationship.changed",
+            "record.corrected"
+          ]
+        },
+        "actor": {
+          "$ref": "#/$defs/ActorRef"
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_time": {
+          "$ref": "#/$defs/ValidTime"
+        },
+        "observation_kind": {
+          "type": "string",
+          "enum": [
+            "observed",
+            "reported",
+            "inferred"
+          ]
+        },
+        "source_instance_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "source_event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sequence": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "correlation_id": {
+          "type": "string",
+          "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+          "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+        },
+        "correlation_quality": {
+          "type": "string",
+          "enum": [
+            "exact",
+            "correlated",
+            "unknown"
+          ]
+        },
+        "causation_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_locator": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "payload_sha256": {
+          "type": "string",
+          "description": "SHA-256 十六进制摘要。",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "subject_id": {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            "subject_kind": {
+              "type": "string",
+              "minLength": 1
+            },
+            "subject_revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "summary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "command": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/DomainCommand"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "related_entity_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "minItems": 0
+            },
+            "before_revision_refs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/RevisionRef"
+              },
+              "minItems": 0
+            },
+            "after_entities": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/Project"
+                  },
+                  {
+                    "$ref": "#/$defs/Branch"
+                  },
+                  {
+                    "$ref": "#/$defs/ResearchUnit"
+                  },
+                  {
+                    "$ref": "#/$defs/GraphEdge"
+                  },
+                  {
+                    "$ref": "#/$defs/Claim"
+                  },
+                  {
+                    "$ref": "#/$defs/Evidence"
+                  },
+                  {
+                    "$ref": "#/$defs/Decision"
+                  },
+                  {
+                    "$ref": "#/$defs/ArtifactVersion"
+                  },
+                  {
+                    "$ref": "#/$defs/ExperimentRun"
+                  },
+                  {
+                    "$ref": "#/$defs/Checkpoint"
+                  },
+                  {
+                    "$ref": "#/$defs/Proposal"
+                  },
+                  {
+                    "$ref": "#/$defs/ReviewRecord"
+                  },
+                  {
+                    "$ref": "#/$defs/SessionBinding"
+                  },
+                  {
+                    "$ref": "#/$defs/CapabilityManifest"
+                  },
+                  {
+                    "$ref": "#/$defs/ContextBundle"
+                  },
+                  {
+                    "$ref": "#/$defs/ReadingBrief"
+                  },
+                  {
+                    "$ref": "#/$defs/Grant"
+                  }
+                ]
+              },
+              "minItems": 0
+            },
+            "raw_source_artifact_version_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+                  "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "subject_id",
+            "subject_kind",
+            "subject_revision",
+            "summary",
+            "command",
+            "related_entity_ids",
+            "before_revision_refs",
+            "after_entities",
+            "raw_source_artifact_version_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "revision",
+        "project_id",
+        "schema_version",
+        "event_seq",
+        "project_revision_after",
+        "event_type",
+        "actor",
+        "occurred_at",
+        "recorded_at",
+        "valid_time",
+        "observation_kind",
+        "source_instance_id",
+        "source_event_id",
+        "source_sequence",
+        "correlation_id",
+        "correlation_quality",
+        "causation_event_ids",
+        "idempotency_key",
+        "source_locator",
+        "payload_sha256",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "description": "SQLite events表中的追加事件。actor、序号、记录时间由服务端生成。revision恒为1；纠正通过新事件。不允许任意客户端写入权威事件。跨来源event_seq仅表示本系统提交顺序。 payload.after_entities保存本事务改变的完整实体修订，支持确定性重建投影；不得只记录摘要。project_revision_after在原始采集和派生记录事件上可保持相同。"
+    },
+    "UnitCompletion": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "criteria_satisfied",
+            "closed_with_limitations"
+          ]
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "review_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+            "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "minItems": 0
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "kind",
+        "basis",
+        "evidence_ids",
+        "review_ids",
+        "completed_at"
+      ],
+      "additionalProperties": false,
+      "description": "criteria_satisfied需核对该单元所有强制完成条件；closed_with_limitations必须明确停止理由与未完成部分，不宣称已验证。"
+    },
+    "GenerationInfo": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "template",
+            "model",
+            "human"
+          ]
+        },
+        "model_provider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prompt_template_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "template_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input_sha256": {
+          "type": "string",
+          "description": "SHA-256 十六进制摘要。",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "processing_command_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "description": "稳定且项目内唯一的可读前缀标识；重命名不改变标识。",
+              "pattern": "^[a-z]{3}_[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "mode",
+        "model_provider",
+        "model_id",
+        "prompt_template_id",
+        "template_version",
+        "input_sha256",
+        "generated_at",
+        "processing_command_id"
+      ],
+      "additionalProperties": false,
+      "description": "派生内容的生成环境。模型字段由执行服务写入，不由模型自由文本填造；人工或模板模式允许为null。"
+    }
+  }
+}

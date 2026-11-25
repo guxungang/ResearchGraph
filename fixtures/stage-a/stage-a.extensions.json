@@ -1,0 +1,2301 @@
+{
+  "extension_version": "0.1.0-stage-a",
+  "notice": "本文件是阶段A样机的扩展夹具，全部为虚构内容。它不属于合同 v1.0.0；进入阶段B前须经合同修订正式定义。",
+  "display_names": {
+    "prj_mcs": "本项目",
+    "cst_complexity": "“增加复杂度前先说明贡献”",
+    "cst_same_conditions": "“路线比较须使用相同条件”",
+    "grt_owner_core": "研究负责人的人工操作授权",
+    "grt_routine": "对照实验的常规整理授权",
+    "grt_calib_routine": "校准实验的常规整理授权（已过期）",
+    "ses_alloc": "会话 codex-sess-7f3a（对照实验）",
+    "ses_calib": "会话 codex-sess-2c91（校准实验）",
+    "ctx_alloc_exp": "上下文包：对照实验（会话开始时）",
+    "ctx_calib": "上下文包：校准实验",
+    "cap_codex_cli": "Codex CLI 伴随连接的能力清单",
+    "cap_claude_import": "Claude Code 档案导入的能力清单",
+    "src_codex_cli": "Codex CLI（伴随模式）",
+    "src_claude_export": "Claude Code（档案导入）"
+  },
+  "one_liners": {
+    "dec_start_c": "路线C要检验“简化评分”是否够用。现在开始，会和正在跑的对照实验抢同一块GPU。",
+    "pro_add_network": "模型建议加一个时空图神经网络来提高预测精度，但没有给出证据。",
+    "pro_c_timing": "模型建议路线C现在就并行开始。",
+    "pro_alloc_metrics": "在对照实验里多统计一项：失败分配次数。",
+    "pro_c_open": "把“路线C何时开始”列为待决定事项。"
+  },
+  "run_results": {
+    "run_baseline_1s": "完成率 0.74（单一种子，旧规则）",
+    "run_baseline": "完成率 0.71（0.69–0.73）",
+    "run_a_diag": "0.8–0.9 区间实际到达 0.62",
+    "run_calib": "概率误差 0.142 → 0.058",
+    "run_calib_peak": "晚高峰概率误差 0.113",
+    "run_alloc_v1": "数据路径错误，4分钟后中止",
+    "run_alloc_v2": "运行中，尚无结果"
+  },
+  "contract_gaps": [
+    {
+      "topic": "术语表（带版本、适用分支与来源）",
+      "spec_section": "§5.4",
+      "decision_record": "docs/decisions/0002-prototype-extensions.md"
+    },
+    {
+      "topic": "待关注事项与纠偏提醒",
+      "spec_section": "§6.1、§8.3",
+      "decision_record": "docs/decisions/0002-prototype-extensions.md"
+    },
+    {
+      "topic": "工作约定（范围、产物、检查方式、预算）",
+      "spec_section": "§7.2",
+      "decision_record": "docs/decisions/0002-prototype-extensions.md"
+    },
+    {
+      "topic": "方法层与实现层的结构化内容",
+      "spec_section": "§5.3",
+      "decision_record": "docs/decisions/0002-prototype-extensions.md"
+    },
+    {
+      "topic": "路线比较的共同维度与指标可比性",
+      "spec_section": "§6.4",
+      "decision_record": "docs/decisions/0002-prototype-extensions.md"
+    },
+    {
+      "topic": "连接状态的采集范围与最后同步时间",
+      "spec_section": "§6.1、§12.3",
+      "decision_record": "docs/decisions/0002-prototype-extensions.md"
+    }
+  ],
+  "viewer": {
+    "principal_id": "usr_owner",
+    "display_name": "研究负责人",
+    "last_visit_at": "2026-11-20T09:00:00Z",
+    "now": "2026-11-25T04:00:00Z"
+  },
+  "home": {
+    "summary": {
+      "question": "车辆位置预测不准时，怎样让更多采集任务按时完成？",
+      "mainline": "主线是路线B：先校准（修正）预测给出的到达概率，再交给原来的分配器。",
+      "known": {
+        "text": "校准后，到达概率更准了",
+        "detail": "测试数据上概率误差从 0.142 降到 0.058。但晚高峰时段仍然不准（0.113）。",
+        "ref": "evd_ece_test"
+      },
+      "unknown": {
+        "text": "概率更准，能不能让更多任务按时完成？",
+        "detail": "这是路线B成立的前提，目前还没有证据。论文草稿已经写了“显著提高”，需要先改掉。",
+        "ref": "clm_completion"
+      },
+      "doing": {
+        "text": "对照实验：原始概率 vs 校准后概率",
+        "ref": "unt_alloc_exp"
+      }
+    },
+    "brief_paragraphs": [
+      "本项目研究：车辆位置预测有误差时，怎样提高移动群智感知任务的完成率。平台把“到某个区域采集信息”的任务分给行驶中的车辆；分配器依据每辆车按时到达的概率选车，而这些概率来自有误差的预测。",
+      "当前主线是路线B：先用温度缩放修正到达概率，再交给原有分配器，分配器本身不改。已经知道的是：校准让测试数据上的概率更可靠（期望校准误差从0.142降到0.058），但晚高峰时段仍明显偏离。"
+    ],
+    "changes_since_last_visit": [
+      {
+        "at": "2026-11-21T01:34:00Z",
+        "text": "对照实验第一次运行因找不到数据文件而中止。这是执行问题，不是反证；配置已修正。",
+        "short": "对照实验第一次运行失败：数据路径写错了（不是反证）",
+        "refs": [
+          "run_alloc_v1"
+        ]
+      },
+      {
+        "at": "2026-11-21T02:00:00Z",
+        "text": "按你11月20日在会话中给出的范围授权，系统自动更新了对照实验的下一步说明（加入失败分配次数统计），没有再次询问你。",
+        "short": "系统按你的授权，自动更新了对照实验的下一步",
+        "refs": [
+          "pro_alloc_metrics",
+          "grt_routine"
+        ]
+      },
+      {
+        "at": "2026-11-23T02:00:00Z",
+        "text": "你标记对照实验的说明“需要补背景”之后，说明已更新为第2版，补充了“预测层指标与系统层指标”的区别。",
+        "short": "对照实验的说明更新到第2版，补上了你要的背景",
+        "refs": [
+          "brf_alloc_exp",
+          "rev_brief_alloc"
+        ]
+      },
+      {
+        "at": "2026-11-23T07:30:00Z",
+        "text": "你从11月2日的快照新建了路线C（简化分配评分）。它尚未开始，等待你决定开展时机。",
+        "short": "新建了路线C（简化评分），等你决定何时开始",
+        "refs": [
+          "brn_c",
+          "dec_start_c"
+        ]
+      },
+      {
+        "at": "2026-11-24T07:20:00Z",
+        "text": "模型建议增加时空图神经网络。该建议与已关闭的备选路线重复，尚未获准。",
+        "short": "模型建议加复杂预测网络：与已关闭路线重复，未采纳",
+        "refs": [
+          "pro_add_network",
+          "brn_net"
+        ]
+      },
+      {
+        "at": "2026-11-25T02:10:00Z",
+        "text": "对照实验第二次运行开始，仍在进行，尚无结果。",
+        "short": "对照实验第二次运行开始",
+        "refs": [
+          "run_alloc_v2"
+        ]
+      }
+    ],
+    "biggest_uncertainty": {
+      "text": "最重要的不确定性：概率更可靠，能不能带来更多按时完成的任务——这正是正在运行的对照实验要回答的问题。结果出来之前，论文草稿中“校准显著提高了任务完成率”的说法没有依据。",
+      "refs": [
+        "clm_completion",
+        "clm_paper_s4",
+        "run_alloc_v2"
+      ]
+    },
+    "recent_output_ids": [
+      "art_alloc_config",
+      "brf_alloc_exp",
+      "art_peak_results",
+      "art_alloc_v1_log"
+    ]
+  },
+  "connections": [
+    {
+      "harness_instance_id": "src_codex_cli",
+      "label": "Codex CLI · 伴随模式",
+      "last_sync_at": "2026-11-25T03:52:00Z",
+      "capture_scope": "会话 codex-sess-7f3a 的用户消息、模型回复与本地工具事件",
+      "not_captured": [
+        "部分托管工具调用（不经过本地Hook）",
+        "其他未选择的会话"
+      ]
+    },
+    {
+      "harness_instance_id": "src_claude_export",
+      "label": "Claude Code · 档案导入",
+      "last_sync_at": "2026-09-15T02:00:00Z",
+      "capture_scope": "9月15日导入的1个会话导出文件（项目初期讨论）",
+      "not_captured": [
+        "导入之后的新会话"
+      ]
+    }
+  ],
+  "attention_items": [
+    {
+      "id": "att_dec_c",
+      "kind": "decision",
+      "title": "路线C什么时候开始？",
+      "basis": "待决定事项 dec_start_c 尚未选择；模型建议现在并行开展（候选 pro_c_timing），但这会与正在运行的对照实验争用同一GPU。",
+      "refs": [
+        "dec_start_c",
+        "pro_c_timing"
+      ],
+      "affected": [
+        "brn_c",
+        "unt_c_weight",
+        "run_alloc_v2"
+      ],
+      "short": "现在就并行开始，还是等路线B有结果再说？",
+      "action_label": "去决定",
+      "suggested_action": "在决策中心选择开展时机。",
+      "priority": 1,
+      "priority_reason": "影响当前主线的计算资源安排，且路线C在你选择之前无法开始。",
+      "target": "#/decisions?focus=dec_start_c"
+    },
+    {
+      "id": "att_paper_gap",
+      "kind": "evidence_gap",
+      "title": "论文结论缺少证据",
+      "basis": "规则“论文结论缺少对应证据”：草稿第3版第4.2节写“校准显著提高了任务完成率”（clm_paper_s4），但对应主张 clm_completion 仍未评估，没有任何支持证据。",
+      "refs": [
+        "clm_paper_s4",
+        "clm_completion",
+        "art_paper_draft_v3"
+      ],
+      "affected": [
+        "art_paper_draft_v3"
+      ],
+      "short": "草稿写了“校准显著提高完成率”，目前没有证据支持",
+      "action_label": "查看",
+      "suggested_action": "对照实验出结果前，把该句改为“校准降低了测试划分上的概率误差；对任务完成率的影响正在检验”。",
+      "priority": 2,
+      "priority_reason": "证据严重程度高：论文陈述超出了已有证据。",
+      "target": "#/evidence?focus=clm_paper_s4"
+    },
+    {
+      "id": "att_drift_net",
+      "kind": "drift",
+      "title": "模型建议重复旧路线",
+      "basis": "规则“准备重复已有失败尝试”与“与有效约束冲突”：候选 pro_add_network 建议增加时空图网络，与已关闭路线 brn_net 方向相同；关闭时的恢复条件尚未满足，且建议未说明复杂度贡献（约束 cst_complexity）。",
+      "refs": [
+        "pro_add_network",
+        "brn_net",
+        "dec_no_network"
+      ],
+      "affected": [
+        "brn_main"
+      ],
+      "short": "模型建议加复杂网络，这条路之前已经关闭过",
+      "action_label": "查看",
+      "suggested_action": "查看关闭理由后拒绝或暂缓该建议。",
+      "priority": 3,
+      "priority_reason": "影响主线目标：若采纳会把重心从对照实验转向模型开发。",
+      "target": "#/decisions?focus=pro_add_network"
+    },
+    {
+      "id": "att_review_calib",
+      "kind": "review",
+      "title": "有一个新版本待审阅",
+      "basis": "你11月2日审阅通过的是第2版；11月18日加入晚高峰反证后形成第3版。新修订不继承旧审阅。",
+      "refs": [
+        "unt_calib_exp",
+        "rev_calib_exp"
+      ],
+      "affected": [
+        "unt_calib_exp"
+      ],
+      "short": "校准实验加入晚高峰反证后的第3版，还没审阅",
+      "action_label": "去审阅",
+      "suggested_action": "打开单元的“历史与版本”查看两版差异。",
+      "priority": 4,
+      "priority_reason": "不阻塞当前工作。",
+      "target": "#/unit/unt_calib_exp?tab=history"
+    },
+    {
+      "id": "att_raw_data",
+      "kind": "source",
+      "title": "原始数据不在本地",
+      "basis": "成果版本 art_raw_trajectories 位于远端存储，只登记了元数据；快照 ckp_calib 因此只能部分恢复。",
+      "refs": [
+        "art_raw_trajectories",
+        "ckp_calib"
+      ],
+      "affected": [
+        "ckp_calib",
+        "brn_c"
+      ],
+      "short": "原始轨迹存放在远端，旧快照只能部分恢复",
+      "action_label": "查看",
+      "suggested_action": "需要复现旧实验时，先把数据复制到本地并登记内容摘要。",
+      "priority": 5,
+      "priority_reason": "只影响复现，不影响当前运行。",
+      "target": "#/evidence?tab=artifacts&focus=art_raw_trajectories"
+    },
+    {
+      "id": "att_capability",
+      "kind": "capability",
+      "title": "连接能力有限",
+      "basis": "能力探测：interruptTurn、steerTurn 为“不支持”；observeTools 为“部分支持”，部分工具事件可能漏记。",
+      "refs": [
+        "cap_codex_cli",
+        "ses_alloc"
+      ],
+      "affected": [
+        "ses_alloc"
+      ],
+      "short": "伴随模式下，不能从工作台停止正在运行的任务",
+      "action_label": "查看",
+      "suggested_action": "需要停止时，请在原客户端中操作。",
+      "priority": 6,
+      "priority_reason": "提示性信息。",
+      "target": "#/connections"
+    }
+  ],
+  "glossary": [
+    {
+      "id": "trm_mcs",
+      "term": "移动群智感知",
+      "aliases": [
+        "群智感知"
+      ],
+      "match": [
+        "移动群智感知"
+      ],
+      "plain": "由大量普通参与者（这里是车辆）在日常移动中顺带采集信息的方式。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 1,
+      "source": {
+        "entity_id": "art_problem_doc_v2",
+        "note": "问题定义 §1"
+      },
+      "example": "车辆经过路口时顺带拍摄路况。"
+    },
+    {
+      "id": "trm_arrival",
+      "term": "到达概率",
+      "aliases": [
+        "到达的概率"
+      ],
+      "match": [
+        "到达概率"
+      ],
+      "plain": "预测模型给出的“这辆车会在时限内到达目标区域”的可能性，取值0到1。",
+      "formal": "P(车辆到达时刻 ≤ 发布时刻 + 时限)",
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 1,
+      "source": {
+        "entity_id": "art_problem_doc_v2",
+        "note": "问题定义 §2"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_calibration",
+      "term": "概率校准",
+      "aliases": [
+        "校准"
+      ],
+      "match": [
+        "概率校准"
+      ],
+      "plain": "检查模型报出的概率与实际发生频率是否一致，并修正系统性的偏差。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 3,
+      "source": {
+        "entity_id": "evd_lit_calib",
+        "note": "综述 §5"
+      },
+      "example": "模型说“八成会到”的车辆，实际也应约有八成按时到达。"
+    },
+    {
+      "id": "trm_temp_scaling",
+      "term": "温度缩放",
+      "aliases": [
+        "TS",
+        "temperature scaling"
+      ],
+      "match": [
+        "温度缩放"
+      ],
+      "plain": "把模型原始分数统一除以一个数T再换算成概率；只学习T一个参数，不改变排序。",
+      "formal": "p̂ = σ(z ÷ T)",
+      "scope_branch_ids": [
+        "brn_main",
+        "brn_c"
+      ],
+      "scope_note": "校准相关单元",
+      "valid_from_project_revision": 7,
+      "source": {
+        "entity_id": "dec_calib_method",
+        "note": "方法选择"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_isotonic",
+      "term": "保序回归",
+      "aliases": [
+        "isotonic regression"
+      ],
+      "match": [
+        "保序回归"
+      ],
+      "plain": "学习一条只升不降的映射曲线来修正概率；更灵活，但需要更多样本。",
+      "formal": null,
+      "scope_branch_ids": [
+        "brn_main"
+      ],
+      "scope_note": "方法比较",
+      "valid_from_project_revision": 7,
+      "source": {
+        "entity_id": "evd_lit_calib",
+        "note": "综述 §5.2"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_ece",
+      "term": "期望校准误差（ECE）",
+      "aliases": [
+        "ECE",
+        "期望校准误差"
+      ],
+      "match": [
+        "ECE",
+        "期望校准误差"
+      ],
+      "plain": "衡量概率可靠性的单一数字：各概率区间“预测平均”与“实际比例”之差按样本量加权平均。越小越可靠。",
+      "formal": "ECE = Σ_b (n_b ÷ N) × |实际比例_b − 预测平均_b|",
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 8,
+      "source": {
+        "entity_id": "evd_ece_test",
+        "note": "实验定义"
+      },
+      "example": "0.142 表示平均偏差约14个百分点。"
+    },
+    {
+      "id": "trm_reliability",
+      "term": "可靠性曲线",
+      "aliases": [
+        "校准曲线"
+      ],
+      "match": [
+        "可靠性曲线"
+      ],
+      "plain": "按概率分组，比较每组预测平均值与实际比例；越贴近对角线越可靠。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 4,
+      "source": {
+        "entity_id": "evd_reliability_a",
+        "note": "诊断方法"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_overconf",
+      "term": "过度自信",
+      "aliases": [
+        "overconfident"
+      ],
+      "match": [
+        "过度自信"
+      ],
+      "plain": "预测概率系统性高于实际发生的比例。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 4,
+      "source": {
+        "entity_id": "clm_overconf",
+        "note": "诊断结论"
+      },
+      "example": "说有九成把握，实际只有六成。"
+    },
+    {
+      "id": "trm_seed",
+      "term": "随机种子",
+      "aliases": [
+        "种子",
+        "seed"
+      ],
+      "match": [
+        "随机种子"
+      ],
+      "plain": "控制实验中随机因素的数字；多个种子重复可以看出结果是否偶然。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目；路线比较统一使用11–15",
+      "valid_from_project_revision": 5,
+      "source": {
+        "entity_id": "dec_eval_v2",
+        "note": "评价规则"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_completion",
+      "term": "任务完成率",
+      "aliases": [
+        "完成率",
+        "TCR"
+      ],
+      "match": [
+        "任务完成率"
+      ],
+      "plain": "按时完成的任务数除以发布的任务数。这是项目的核心系统层指标。",
+      "formal": "按时完成的任务数 ÷ 发布的任务数",
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 1,
+      "source": {
+        "entity_id": "art_problem_doc_v2",
+        "note": "问题定义 §3"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_failed",
+      "term": "失败分配",
+      "aliases": [
+        "失败分配次数"
+      ],
+      "match": [
+        "失败分配"
+      ],
+      "plain": "任务分给了车辆，但车辆没有在时限内到达。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 5,
+      "source": {
+        "entity_id": "art_baseline_results",
+        "note": "基线结果字段 failed_assignments"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_layers",
+      "term": "预测层指标与系统层指标",
+      "aliases": [
+        "预测层指标",
+        "系统层指标"
+      ],
+      "match": [
+        "预测层",
+        "系统层"
+      ],
+      "plain": "ECE衡量概率准不准（预测层）；任务完成率衡量最后完成了多少任务（系统层）。前者改善不能自动推出后者改善。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 16,
+      "source": {
+        "entity_id": "brf_alloc_exp",
+        "note": "第2版补充"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_control",
+      "term": "对照实验",
+      "aliases": [
+        "对照"
+      ],
+      "match": [
+        "对照实验"
+      ],
+      "plain": "只改变一个因素、其余条件全部相同的实验，结果差异才能归因于这个因素。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 14,
+      "source": {
+        "entity_id": "unt_alloc_exp",
+        "note": "方法"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_split",
+      "term": "验证划分",
+      "aliases": [
+        "验证集",
+        "测试划分",
+        "测试集"
+      ],
+      "match": [
+        "验证划分",
+        "测试划分"
+      ],
+      "plain": "验证划分用于调参数，测试划分只用于最终评价；二者都不参与训练。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 5,
+      "source": {
+        "entity_id": "art_dataset_manifest",
+        "note": "数据清单"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_score",
+      "term": "分配评分",
+      "aliases": [
+        "评分"
+      ],
+      "match": [
+        "分配评分"
+      ],
+      "plain": "分配器给每个“车辆—任务”配对打的分，分数最高的配对优先分配。",
+      "formal": "s = w_d × (−距离) + w_t × 剩余时限 + w_r × p̂",
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 1,
+      "source": {
+        "entity_id": "art_problem_doc_v2",
+        "note": "问题定义 §4"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_checkpoint",
+      "term": "快照",
+      "aliases": [
+        "检查点"
+      ],
+      "match": [
+        "快照"
+      ],
+      "plain": "一组项目修订与成果版本的可恢复清单，不是一句模型总结。从快照继续会新建分支。",
+      "formal": null,
+      "scope_branch_ids": null,
+      "scope_note": "全项目",
+      "valid_from_project_revision": 10,
+      "source": {
+        "entity_id": "ckp_calib",
+        "note": "快照"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_T_temp",
+      "term": "T（温度）",
+      "aliases": [
+        "温度参数"
+      ],
+      "match": [],
+      "plain": "温度缩放中，把原始分数统一除以的那个数。",
+      "formal": "p̂ = σ(z ÷ T)，T > 0",
+      "scope_branch_ids": [
+        "brn_main",
+        "brn_c"
+      ],
+      "scope_note": "仅在校准相关单元中使用",
+      "valid_from_project_revision": 7,
+      "source": {
+        "entity_id": "dec_calib_method",
+        "note": "方法选择"
+      },
+      "example": null
+    },
+    {
+      "id": "trm_T_deadline",
+      "term": "T（时限）",
+      "aliases": [
+        "任务时限"
+      ],
+      "match": [],
+      "plain": "任务发布后必须完成采集的时间上限，本项目为30分钟。",
+      "formal": "车辆到达时刻 ≤ 发布时刻 + T",
+      "scope_branch_ids": null,
+      "scope_note": "问题定义中使用；与“温度T”是不同的量，不能合并",
+      "valid_from_project_revision": 1,
+      "source": {
+        "entity_id": "art_problem_doc_v2",
+        "note": "问题定义 §2"
+      },
+      "example": null
+    }
+  ],
+  "unit_details": {
+    "unt_problem": {
+      "kind_label": "问题建模",
+      "work_agreement": {
+        "question": "到达不确定时，任务分配问题的输入、决策、目标和约束是什么？",
+        "allowed_scope": [
+          "阅读数据集说明",
+          "撰写与修改 docs/problem.md"
+        ],
+        "expected_outputs": [
+          "问题定义文档"
+        ],
+        "check_method": "研究负责人审阅问题定义",
+        "budget": null
+      },
+      "example": "例如：某任务要求在14:00前到达体育馆东门拍摄路况。车辆甲预测有0.9的概率按时到达，车辆乙为0.6。分配器在预算允许时会选甲；如果甲的0.9实际只相当于0.6，这个选择就可能失败。",
+      "change_basis": [
+        {
+          "text": "第2版把预算口径从“按任务个数”改为“按激励金额”，因为数据集中的激励金额随距离变化。",
+          "refs": [
+            "art_problem_doc_v2"
+          ]
+        }
+      ],
+      "method_layer": {
+        "inputs": [
+          "任务列表：目标区域、发布时刻、时限（30分钟）",
+          "每辆车对每个任务的到达概率",
+          "总激励预算"
+        ],
+        "outputs": [
+          "每个任务分给哪辆车（或不分配）"
+        ],
+        "steps": [
+          "列出所有“车辆—任务”配对",
+          "按分配评分排序",
+          "在预算内依次分配，每辆车同一时段最多接一个任务",
+          "统计按时完成的任务数"
+        ],
+        "comparison": null
+      },
+      "implementation_layer": {
+        "formulas": [
+          {
+            "label": "任务完成率",
+            "expression": "任务完成率 = 按时完成的任务数 ÷ 发布的任务数",
+            "variables": []
+          },
+          {
+            "label": "按时到达",
+            "expression": "车辆到达时刻 ≤ 任务发布时刻 + T",
+            "variables": [
+              {
+                "symbol": "T",
+                "meaning": "任务时限（本项目为30分钟）。注意：与校准中的“温度T”不是同一个量。"
+              }
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "时限 T",
+            "value": "30分钟",
+            "source": "docs/problem.md 第2版 §2"
+          }
+        ],
+        "pseudocode": null,
+        "file_changes": [
+          {
+            "artifact_version_id": "art_problem_doc_v2",
+            "path": "docs/problem.md",
+            "summary": "第2版：预算口径改为激励金额",
+            "diff_excerpt": "- 预算 B：可发布的任务个数\n+ 预算 B：激励金额总和（与数据集 incentive 字段一致）",
+            "model_claim": null,
+            "conflict": null
+          }
+        ],
+        "mappings": [
+          {
+            "statement": "任务完成率的计算方式",
+            "artifact_version_id": "art_problem_doc_v2",
+            "locator": "docs/problem.md §3"
+          }
+        ]
+      },
+      "activities": [
+        {
+          "at": "2026-09-15T02:00:00Z",
+          "kind": "system",
+          "text": "导入 Claude Code 会话导出文件（项目初期讨论），按来源时间关联到本单元。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "档案导入 src_claude_export"
+        },
+        {
+          "at": "2026-09-10T07:30:00Z",
+          "kind": "user_message",
+          "text": "研究负责人审阅问题定义第2版：审阅通过。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "界面操作 act_rev_problem"
+        }
+      ]
+    },
+    "unt_lit": {
+      "kind_label": "文献调研",
+      "work_agreement": {
+        "question": "已有工作在哪些环节处理预测误差？",
+        "allowed_scope": [
+          "检索与阅读文献",
+          "撰写比较表"
+        ],
+        "expected_outputs": [
+          "文献比较表",
+          "方法选择依据"
+        ],
+        "check_method": "比较表覆盖至少10篇文献",
+        "budget": null
+      },
+      "example": null,
+      "change_basis": [],
+      "method_layer": {
+        "inputs": [
+          "14篇虚构文献"
+        ],
+        "outputs": [
+          "按处理环节分类的比较表"
+        ],
+        "steps": [
+          "按“在哪个环节处理误差”分为三类",
+          "对每类记录额外数据需求、是否改动分配算法、实验车辆类型"
+        ],
+        "comparison": {
+          "title": "三类处理误差的方式",
+          "columns": [
+            "需要的额外数据",
+            "是否改动分配算法",
+            "文献中的车辆类型"
+          ],
+          "rows": [
+            {
+              "label": "①改进预测模型",
+              "cells": [
+                "更多轨迹与路网数据",
+                "否",
+                "出租车、公交"
+              ]
+            },
+            {
+              "label": "②分配时留余量",
+              "cells": [
+                "无",
+                "是",
+                "出租车"
+              ]
+            },
+            {
+              "label": "③先修正概率再分配",
+              "cells": [
+                "少量校准样本",
+                "否",
+                "出租车"
+              ]
+            }
+          ]
+        }
+      },
+      "implementation_layer": {
+        "formulas": [],
+        "parameters": [],
+        "pseudocode": null,
+        "file_changes": [],
+        "mappings": []
+      },
+      "activities": []
+    },
+    "unt_baseline": {
+      "kind_label": "实验",
+      "work_agreement": {
+        "question": "原方法在固定条件下的任务完成率",
+        "allowed_scope": [
+          "运行原方法",
+          "修改评价配置"
+        ],
+        "expected_outputs": [
+          "5个种子的基线结果"
+        ],
+        "check_method": "结果文件与配置可复核",
+        "budget": "计算时间不超过8小时（研究负责人设定）"
+      },
+      "example": "例如：同一天的任务，用种子11模拟时完成率为0.73，用种子14时为0.69；报告“0.71（0.69–0.73）”比只报告某一次更能反映真实水平。",
+      "change_basis": [
+        {
+          "text": "评价规则从单一种子改为5个种子（dec_eval_v2 替代 dec_eval_v1），因为单一种子的0.74可能偶然偏高。",
+          "refs": [
+            "dec_eval_v2",
+            "dec_eval_v1"
+          ]
+        }
+      ],
+      "method_layer": {
+        "inputs": [
+          "测试划分（2026年8月下旬，虚构）",
+          "预测模型 pred-v3 输出的到达概率",
+          "预算100、时限30分钟"
+        ],
+        "outputs": [
+          "任务完成率（均值与范围）",
+          "失败分配次数"
+        ],
+        "steps": [
+          "按日期划分训练、验证、测试",
+          "在测试划分上模拟任务发布",
+          "分配器直接使用原始到达概率",
+          "用种子11–15各运行一次并汇总"
+        ],
+        "comparison": null
+      },
+      "implementation_layer": {
+        "formulas": [
+          {
+            "label": "汇总方式",
+            "expression": "报告值 = 5个种子结果的均值；同时给出最小值与最大值",
+            "variables": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "预算",
+            "value": "100（激励单位）",
+            "source": "configs/eval.yaml 第2版"
+          },
+          {
+            "name": "随机种子",
+            "value": "11, 12, 13, 14, 15",
+            "source": "configs/eval.yaml 第2版"
+          }
+        ],
+        "pseudocode": null,
+        "file_changes": [
+          {
+            "artifact_version_id": "art_eval_config_v2",
+            "path": "configs/eval.yaml",
+            "summary": "随机种子从1个改为5个",
+            "diff_excerpt": "- seeds: [11]\n+ seeds: [11, 12, 13, 14, 15]",
+            "model_claim": null,
+            "conflict": null
+          }
+        ],
+        "mappings": [
+          {
+            "statement": "任务完成率0.71（0.69–0.73）",
+            "artifact_version_id": "art_baseline_results",
+            "locator": "results/baseline_5seeds.json#/summary/task_completion_rate"
+          }
+        ]
+      },
+      "activities": [
+        {
+          "at": "2026-10-13T08:52:00Z",
+          "kind": "run",
+          "text": "run_baseline 成功结束（5个种子）。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "运行记录 run_baseline"
+        }
+      ]
+    },
+    "unt_a_diag": {
+      "kind_label": "实验",
+      "work_agreement": {
+        "question": "高概率区间是否被高估",
+        "allowed_scope": [
+          "在验证划分上统计",
+          "不改动分配算法"
+        ],
+        "expected_outputs": [
+          "可靠性曲线",
+          "高概率区间统计"
+        ],
+        "check_method": "分组统计可复核",
+        "budget": null
+      },
+      "example": "例如：把所有“预测有八到九成把握”的配对挑出来，共1,840次；如果概率可靠，应有约1,560次按时到达，实际只有约1,140次（0.62）。",
+      "change_basis": [],
+      "method_layer": {
+        "inputs": [
+          "验证划分约2.1万次配对",
+          "原始到达概率"
+        ],
+        "outputs": [
+          "10个概率区间的实际到达比例"
+        ],
+        "steps": [
+          "按预测概率分为10组（0–0.1，…，0.9–1.0）",
+          "计算每组预测平均值与实际到达比例",
+          "画出可靠性曲线"
+        ],
+        "comparison": null
+      },
+      "implementation_layer": {
+        "formulas": [
+          {
+            "label": "某一组的实际到达比例",
+            "expression": "实际比例 = 该组中按时到达的配对数 ÷ 该组配对总数",
+            "variables": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "分组数",
+            "value": "10",
+            "source": "diagnose_reliability.py --bins 10"
+          }
+        ],
+        "pseudocode": null,
+        "file_changes": [
+          {
+            "artifact_version_id": "art_a_reliability",
+            "path": "results/reliability_val.json",
+            "summary": "10组统计结果",
+            "diff_excerpt": null,
+            "model_claim": null,
+            "conflict": null
+          }
+        ],
+        "mappings": [
+          {
+            "statement": "0.8–0.9区间实际比例0.62",
+            "artifact_version_id": "art_a_reliability",
+            "locator": "results/reliability_val.json#/bins/8"
+          }
+        ]
+      },
+      "activities": []
+    },
+    "unt_net_eval": {
+      "kind_label": "综合分析",
+      "work_agreement": {
+        "question": "失败主要来自误差大还是过度相信概率",
+        "allowed_scope": [
+          "分析基线失败记录",
+          "不训练新模型"
+        ],
+        "expected_outputs": [
+          "失败分解表",
+          "是否开展复杂网络的建议"
+        ],
+        "check_method": "分解表可复核",
+        "budget": null
+      },
+      "example": null,
+      "change_basis": [],
+      "method_layer": {
+        "inputs": [
+          "基线612次失败分配",
+          "每次分配的预测位置误差与预测概率"
+        ],
+        "outputs": [
+          "按“概率高低 × 误差大小”的失败分布"
+        ],
+        "steps": [
+          "按预测位置误差分四段",
+          "按预测概率是否不低于0.8分两组",
+          "统计每格中的失败次数"
+        ],
+        "comparison": null
+      },
+      "implementation_layer": {
+        "formulas": [],
+        "parameters": [],
+        "pseudocode": null,
+        "file_changes": [],
+        "mappings": []
+      },
+      "activities": []
+    },
+    "unt_calib_design": {
+      "kind_label": "方法设计",
+      "work_agreement": {
+        "question": "选择校准方法",
+        "allowed_scope": [
+          "新增 src/calibration.py",
+          "不得修改分配器 src/allocator.py"
+        ],
+        "expected_outputs": [
+          "方法选择依据",
+          "校准实现"
+        ],
+        "check_method": "实现审阅：分配器代码无改动",
+        "budget": null
+      },
+      "example": "例如：某车辆原始分数换算成概率是0.90。若拟合得到T=1.84，就先把分数除以1.84再换算，概率变为约0.77；另一辆原来0.80的车会变为约0.68——两辆车的先后顺序不变，只是都不再那么“自信”。",
+      "change_basis": [
+        {
+          "text": "选择温度缩放而不是保序回归：路线B要求不改变车辆排序，且验证样本有限（dec_calib_method，依据 evd_lit_calib）。",
+          "refs": [
+            "dec_calib_method",
+            "evd_lit_calib"
+          ]
+        }
+      ],
+      "method_layer": {
+        "inputs": [
+          "预测模型 pred-v3 的原始分数（未换算成概率之前的数）",
+          "验证划分中车辆是否按时到达"
+        ],
+        "outputs": [
+          "温度参数T",
+          "校准后的到达概率"
+        ],
+        "steps": [
+          "在验证划分上寻找使预测与实际最一致的T",
+          "对所有原始分数除以T",
+          "换算成概率，替换原概率交给分配器"
+        ],
+        "comparison": {
+          "title": "两种候选校准方法",
+          "columns": [
+            "需要学习的参数",
+            "是否保持车辆排序",
+            "所需校准样本",
+            "可解释性"
+          ],
+          "rows": [
+            {
+              "label": "温度缩放（选用）",
+              "cells": [
+                "1个（T）",
+                "是",
+                "较少",
+                "高"
+              ]
+            },
+            {
+              "label": "保序回归",
+              "cells": [
+                "一条映射曲线",
+                "基本保持，但可能并列",
+                "较多",
+                "中"
+              ]
+            }
+          ]
+        }
+      },
+      "implementation_layer": {
+        "formulas": [
+          {
+            "label": "温度缩放",
+            "expression": "p̂ = σ(z ÷ T)",
+            "variables": [
+              {
+                "symbol": "z",
+                "meaning": "预测模型输出的原始分数（logit）"
+              },
+              {
+                "symbol": "T",
+                "meaning": "温度参数，T > 0；T > 1 时概率整体变得不那么极端"
+              },
+              {
+                "symbol": "σ",
+                "meaning": "把分数换算成0到1之间概率的S形函数"
+              },
+              {
+                "symbol": "p̂",
+                "meaning": "校准后的到达概率"
+              }
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "温度 T",
+            "value": "约1.84（5个种子均值）",
+            "source": "实验单元 run_calib 的拟合结果"
+          }
+        ],
+        "pseudocode": "def fit_temperature(z_val, arrived_val):\n    # 只使用验证划分\n    T = 使 负对数似然(σ(z_val / T), arrived_val) 最小 的正数\n    return T\n\ndef apply_temperature(z, T):\n    return σ(z / T)   # 单调变换：车辆之间的排序不变",
+        "file_changes": [
+          {
+            "artifact_version_id": "art_calib_code",
+            "path": "src/calibration.py",
+            "summary": "新增 fit_temperature() 与 apply_temperature()",
+            "diff_excerpt": "+def fit_temperature(z_val, arrived_val):\n+    \"\"\"在验证划分上拟合温度 T。\"\"\"\n+    ...\n+def apply_temperature(z, T):\n+    return sigmoid(z / T)",
+            "model_claim": null,
+            "conflict": null
+          },
+          {
+            "artifact_version_id": null,
+            "path": "src/allocator.py",
+            "summary": "无变化（实现审阅已核对）",
+            "diff_excerpt": null,
+            "model_claim": null,
+            "conflict": null
+          }
+        ],
+        "mappings": [
+          {
+            "statement": "“只改概率、不改分配器”",
+            "artifact_version_id": "art_calib_code",
+            "locator": "git diff：src/allocator.py 无变化"
+          },
+          {
+            "statement": "温度只在验证划分上拟合",
+            "artifact_version_id": "art_calib_code",
+            "locator": "src/calibration.py: fit_temperature()"
+          }
+        ]
+      },
+      "activities": []
+    },
+    "unt_calib_exp": {
+      "kind_label": "实验",
+      "work_agreement": {
+        "question": "校准后概率是否更可靠",
+        "allowed_scope": [
+          "运行评价脚本",
+          "不得修改预测模型权重"
+        ],
+        "expected_outputs": [
+          "校准前后ECE",
+          "可靠性曲线",
+          "按时段结果"
+        ],
+        "check_method": "5个种子、结果文件可复核",
+        "budget": null
+      },
+      "example": "例如：校准前，“预测八到九成”的那一组实际只有六成多到达；校准后，同一组车辆的概率被调低到七成左右，实际到达比例也约为七成，两者对上了。",
+      "change_basis": [
+        {
+          "text": "第3版把结束依据从“完成条件已满足”改为“有限制地结束”，因为11月18日按时段检查发现晚高峰仍偏离。",
+          "refs": [
+            "evd_peak",
+            "clm_calib_all_periods"
+          ]
+        },
+        {
+          "text": "研究负责人11月2日的审阅针对第2版；第3版尚未审阅。",
+          "refs": [
+            "rev_calib_exp"
+          ]
+        }
+      ],
+      "method_layer": {
+        "inputs": [
+          "测试划分全天数据",
+          "校准前后的到达概率",
+          "种子11–15"
+        ],
+        "outputs": [
+          "校准前后ECE",
+          "按时段ECE"
+        ],
+        "steps": [
+          "每个种子在验证划分上拟合T",
+          "在测试划分上计算校准前后ECE",
+          "按时段分组后分别计算ECE"
+        ],
+        "comparison": null
+      },
+      "implementation_layer": {
+        "formulas": [
+          {
+            "label": "期望校准误差（ECE）",
+            "expression": "ECE = Σ_b (n_b ÷ N) × |实际比例_b − 预测平均_b|",
+            "variables": [
+              {
+                "symbol": "b",
+                "meaning": "第 b 个概率区间（共10个）"
+              },
+              {
+                "symbol": "n_b",
+                "meaning": "该区间中的配对数"
+              },
+              {
+                "symbol": "N",
+                "meaning": "全部配对数"
+              }
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "概率分组数",
+            "value": "10",
+            "source": "scripts/eval_calibration.py"
+          }
+        ],
+        "pseudocode": null,
+        "file_changes": [
+          {
+            "artifact_version_id": "art_calib_results",
+            "path": "scripts/eval_calibration.py、results/ece.json",
+            "summary": "新增评价脚本与结果",
+            "diff_excerpt": "+ece_before = ece(p_raw, arrived)\n+ece_after  = ece(apply_temperature(z, T), arrived)",
+            "model_claim": "会话中模型称：“已重新训练预测模型并加入温度缩放。”",
+            "conflict": "实际文件差异只有校准与评价相关文件；没有观测到预测模型的训练运行，pred-v3 的权重文件未变化。“重新训练”的说法与实际不符。"
+          },
+          {
+            "artifact_version_id": "art_peak_results",
+            "path": "results/ece_by_period.json",
+            "summary": "按时段的ECE结果",
+            "diff_excerpt": null,
+            "model_claim": null,
+            "conflict": null
+          }
+        ],
+        "mappings": [
+          {
+            "statement": "ECE从0.142降到0.058",
+            "artifact_version_id": "art_calib_results",
+            "locator": "results/ece.json#/summary"
+          },
+          {
+            "statement": "温度T约为1.84",
+            "artifact_version_id": "art_calib_results",
+            "locator": "results/ece.json#/summary/temperature"
+          },
+          {
+            "statement": "晚高峰校准后ECE 0.113",
+            "artifact_version_id": "art_peak_results",
+            "locator": "results/ece_by_period.json#/periods/evening_peak"
+          }
+        ]
+      },
+      "activities": [
+        {
+          "at": "2026-10-30T09:46:00Z",
+          "kind": "run",
+          "text": "run_calib 成功结束（5个种子）。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "运行记录 run_calib"
+        },
+        {
+          "at": "2026-10-30T10:02:00Z",
+          "kind": "assistant_message",
+          "text": "模型：“已重新训练预测模型并加入温度缩放，ECE 从 0.142 降到 0.058。”",
+          "observation_kind": "reported",
+          "precision": "exact",
+          "source": "会话 codex-sess-2c91 消息 msg-0214"
+        },
+        {
+          "at": "2026-10-30T10:03:00Z",
+          "kind": "system",
+          "text": "规则检查：模型声称的“重新训练”没有对应的训练运行或权重变化，已标记为声称与实际不一致。",
+          "observation_kind": "inferred",
+          "precision": "exact",
+          "source": "确定性规则检查"
+        },
+        {
+          "at": "2026-11-18T06:38:00Z",
+          "kind": "run",
+          "text": "run_calib_peak 成功结束（按时段）。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "运行记录 run_calib_peak"
+        }
+      ]
+    },
+    "unt_alloc_exp": {
+      "kind_label": "实验",
+      "work_agreement": {
+        "question": "校准后的概率能否提高任务完成率",
+        "allowed_scope": [
+          "运行 run_allocation.py",
+          "修改 configs/alloc_compare.yaml",
+          "不得修改分配器与评分代码"
+        ],
+        "expected_outputs": [
+          "三档预算 × 两组 × 5个种子的任务完成率",
+          "失败分配次数",
+          "晚高峰单独结果"
+        ],
+        "check_method": "两组条件一致（同一配置文件）；研究负责人审阅结果解释",
+        "budget": null
+      },
+      "example": "例如：预算100时，假设A组（原始概率）完成71个任务、B组（校准后）完成75个；只有当5个种子中B组都不低于A组的范围时，才可以说“在该预算下观察到提高”。",
+      "change_basis": [
+        {
+          "text": "下一步说明第2版加入“失败分配次数”统计，由策略服务在授权 grt_routine 范围内自动应用。",
+          "refs": [
+            "pro_alloc_metrics",
+            "grt_routine"
+          ]
+        },
+        {
+          "text": "阅读说明第2版补充了“预测层指标与系统层指标”的区别，回应研究负责人“需要补背景”的反馈。",
+          "refs": [
+            "rev_brief_alloc",
+            "brf_alloc_exp"
+          ]
+        }
+      ],
+      "method_layer": {
+        "inputs": [
+          "测试划分",
+          "原始概率（A组）与校准后概率（B组）",
+          "预算50、100、200",
+          "种子11–15"
+        ],
+        "outputs": [
+          "每组每档预算的任务完成率（均值与范围）",
+          "失败分配次数"
+        ],
+        "steps": [
+          "两组使用同一份配置，只切换 use_calibration",
+          "每档预算、每个种子各运行一次",
+          "汇总并按时段拆分晚高峰"
+        ],
+        "comparison": {
+          "title": "对照实验的两组",
+          "columns": [
+            "到达概率",
+            "分配器",
+            "数据、预算、时限、种子"
+          ],
+          "rows": [
+            {
+              "label": "A组（对照）",
+              "cells": [
+                "原始概率",
+                "不变",
+                "相同"
+              ]
+            },
+            {
+              "label": "B组（校准）",
+              "cells": [
+                "温度缩放后",
+                "不变",
+                "相同"
+              ]
+            }
+          ]
+        }
+      },
+      "implementation_layer": {
+        "formulas": [
+          {
+            "label": "任务完成率",
+            "expression": "任务完成率 = 按时完成的任务数 ÷ 发布的任务数",
+            "variables": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "预算",
+            "value": "50、100、200",
+            "source": "configs/alloc_compare.yaml"
+          },
+          {
+            "name": "use_calibration",
+            "value": "A组 false / B组 true",
+            "source": "configs/alloc_compare.yaml"
+          }
+        ],
+        "pseudocode": null,
+        "file_changes": [
+          {
+            "artifact_version_id": "art_alloc_config",
+            "path": "configs/alloc_compare.yaml",
+            "summary": "两组共用的对照配置",
+            "diff_excerpt": "+budgets: [50, 100, 200]\n+seeds: [11, 12, 13, 14, 15]\n+groups:\n+  - {name: A, use_calibration: false}\n+  - {name: B, use_calibration: true}\n+report_periods: [all, evening_peak]",
+            "model_claim": null,
+            "conflict": null
+          }
+        ],
+        "mappings": [
+          {
+            "statement": "两组只切换是否校准",
+            "artifact_version_id": "art_alloc_config",
+            "locator": "configs/alloc_compare.yaml#/groups"
+          },
+          {
+            "statement": "任务完成率结果",
+            "artifact_version_id": null,
+            "locator": null
+          }
+        ]
+      },
+      "activities": [
+        {
+          "at": "2026-11-20T09:12:00Z",
+          "kind": "user_message",
+          "text": "研究负责人：“这个对照实验里的下一步说明和产物登记你直接更新就行，不用每次问我。”→ 形成授权 grt_routine（有效至12月5日）。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "会话 codex-sess-7f3a 消息 msg-0290"
+        },
+        {
+          "at": "2026-11-21T01:34:00Z",
+          "kind": "run",
+          "text": "run_alloc_v1 失败：FileNotFoundError: data/splits/test_v2.parquet。执行环境问题，不是反证。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "运行记录 run_alloc_v1"
+        },
+        {
+          "at": "2026-11-21T01:40:00Z",
+          "kind": "assistant_message",
+          "text": "模型：“新划分的文件名改成了 test_v2b.parquet，已修正配置。”",
+          "observation_kind": "reported",
+          "precision": "exact",
+          "source": "会话 codex-sess-7f3a 消息 msg-0299"
+        },
+        {
+          "at": "2026-11-21T02:00:00Z",
+          "kind": "policy",
+          "text": "策略服务在授权 grt_routine 范围内应用候选 pro_alloc_metrics（下一步加入失败分配次数统计），没有再次询问。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "事件 evt_1019"
+        },
+        {
+          "at": "2026-11-25T02:05:00Z",
+          "kind": "system",
+          "text": "研究负责人选择“在此开展工作”，会话绑定到本单元，上下文包 ctx_alloc_exp 已在会话开始时提供（已发送；无法证明模型已理解）。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "事件 evt_1240"
+        },
+        {
+          "at": "2026-11-25T02:10:00Z",
+          "kind": "run",
+          "text": "run_alloc_v2 开始。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "运行记录 run_alloc_v2"
+        },
+        {
+          "at": "2026-11-25T02:41:00Z",
+          "kind": "file",
+          "text": "文件 results/partial_seed11.json 出现。只按时间窗口关联到本会话，没有工具调用ID，属于推断关联。",
+          "observation_kind": "inferred",
+          "precision": "correlated",
+          "source": "文件监视（时间窗口）"
+        },
+        {
+          "at": "2026-11-25T03:52:00Z",
+          "kind": "tool",
+          "text": "最近一次可靠活动：预算100、种子13运行中。",
+          "observation_kind": "observed",
+          "precision": "exact",
+          "source": "运行心跳 evt_1284"
+        }
+      ]
+    },
+    "unt_c_weight": {
+      "kind_label": "实验（计划）",
+      "work_agreement": {
+        "question": "可靠性加权项是否必要",
+        "allowed_scope": [
+          "新建独立工作区",
+          "在独立工作区中修改 src/scoring.py"
+        ],
+        "expected_outputs": [
+          "简化评分组的任务完成率"
+        ],
+        "check_method": "与路线B对照实验使用相同条件",
+        "budget": null
+      },
+      "example": "例如：两辆车距离相近、时限都够，但甲的到达概率0.8、乙0.5。完整评分会因为可靠性项偏向甲；简化评分只看距离和时限，可能选中乙。路线C要看这种差别累积起来会不会影响完成率。",
+      "change_basis": [
+        {
+          "text": "从快照 ckp_calib（11月2日）继续，并自动带上快照之后发现的晚高峰反证 evd_peak。",
+          "refs": [
+            "ckp_calib",
+            "evd_peak"
+          ]
+        }
+      ],
+      "method_layer": {
+        "inputs": [
+          "校准后的到达概率",
+          "路线B对照实验的配置"
+        ],
+        "outputs": [
+          "简化评分组的任务完成率"
+        ],
+        "steps": [
+          "新建独立工作区",
+          "实现只含距离与时限两项的评分",
+          "在相同条件下运行并与A、B两组比较"
+        ],
+        "comparison": {
+          "title": "完整评分与简化评分",
+          "columns": [
+            "距离项",
+            "时限项",
+            "可靠性加权项"
+          ],
+          "rows": [
+            {
+              "label": "完整评分（现行）",
+              "cells": [
+                "有",
+                "有",
+                "有"
+              ]
+            },
+            {
+              "label": "简化评分（路线C）",
+              "cells": [
+                "有",
+                "有",
+                "无"
+              ]
+            }
+          ]
+        }
+      },
+      "implementation_layer": {
+        "formulas": [
+          {
+            "label": "完整评分",
+            "expression": "s = w_d × (−距离) + w_t × 剩余时限 + w_r × p̂",
+            "variables": [
+              {
+                "symbol": "w_d、w_t、w_r",
+                "meaning": "三项的权重"
+              },
+              {
+                "symbol": "p̂",
+                "meaning": "（校准后的）到达概率"
+              }
+            ]
+          },
+          {
+            "label": "简化评分",
+            "expression": "s = w_d × (−距离) + w_t × 剩余时限",
+            "variables": []
+          }
+        ],
+        "parameters": [],
+        "pseudocode": null,
+        "file_changes": [],
+        "mappings": [
+          {
+            "statement": "简化评分的实现",
+            "artifact_version_id": null,
+            "locator": null
+          }
+        ]
+      },
+      "activities": [
+        {
+          "at": "2026-11-23T08:09:00Z",
+          "kind": "assistant_message",
+          "text": "模型：“路线C可以现在就并行开始，这样两天后就能同时得到两条路线的结论。”（形成候选 pro_c_timing，尚未获准）",
+          "observation_kind": "reported",
+          "precision": "exact",
+          "source": "会话 codex-sess-7f3a 消息 msg-0351"
+        }
+      ]
+    }
+  },
+  "branch_notes": {
+    "brn_main": {
+      "status_note": "主线，正在进行任务分配对照实验。",
+      "resume_condition": null,
+      "reusable_findings": []
+    },
+    "brn_a": {
+      "status_note": "暂缓：作为对照保留。诊断发现高概率区间被高估，因此主线改走路线B。",
+      "resume_condition": "若路线B的对照实验没有改善任务完成率。",
+      "reusable_findings": [
+        "原方法的基线结果（evd_baseline_completion）",
+        "验证划分的可靠性曲线（evd_reliability_a）"
+      ]
+    },
+    "brn_net": {
+      "status_note": "已关闭（决定 dec_no_network）。",
+      "resume_condition": "任务分配对照实验显示校准后的概率仍是任务失败的主要瓶颈。",
+      "reusable_findings": [
+        "文献调研中整理的三类预测误差来源",
+        "基线失败分解表（evd_failure_analysis）"
+      ]
+    },
+    "brn_c": {
+      "status_note": "待开始：等待决定 dec_start_c。从快照 ckp_calib 继续，已带上之后发现的晚高峰反证。",
+      "resume_condition": null,
+      "reusable_findings": []
+    }
+  },
+  "comparison": {
+    "question": "车辆位置预测有误差时，怎样提高任务完成率？",
+    "dimension_labels": {
+      "problem": "解决的具体问题",
+      "assumptions": "关键假设",
+      "support": "已有支持",
+      "counter": "反证",
+      "open": "未解决事项",
+      "cost": "实现与实验成本",
+      "interpretability": "可解释性",
+      "decision": "当前决策状态"
+    },
+    "routes": [
+      {
+        "branch_id": "brn_a",
+        "label": "路线A：直接使用概率",
+        "card": {
+          "aim": "直接用模型给的到达概率分配任务",
+          "evidence_for": "基线完成率 0.71",
+          "evidence_against": "高概率区间被高估：说九成，实际约六成",
+          "completion": "0.71",
+          "cost": "低",
+          "status": "暂缓，作为对照"
+        },
+        "dims": {
+          "problem": {
+            "text": "分配器直接使用预测概率；改进只能来自分配算法本身。",
+            "refs": []
+          },
+          "assumptions": {
+            "text": "预测概率足够可靠，可以直接用于分配。",
+            "refs": []
+          },
+          "support": {
+            "text": "基线任务完成率0.71（5个种子）。",
+            "refs": [
+              "evd_baseline_completion"
+            ]
+          },
+          "counter": {
+            "text": "高概率区间被高估：0.8–0.9区间实际只有0.62。",
+            "refs": [
+              "evd_reliability_a"
+            ]
+          },
+          "open": {
+            "text": "分配算法本身还有多少改进空间，未测量。",
+            "refs": []
+          },
+          "cost": {
+            "text": "无额外实现；已有基线结果。",
+            "refs": []
+          },
+          "interpretability": {
+            "text": "高：只有一个分配器。",
+            "refs": []
+          },
+          "decision": {
+            "text": "暂缓，作为对照保留（dec_route_b 选择了路线B）。",
+            "refs": [
+              "dec_route_b"
+            ]
+          }
+        }
+      },
+      {
+        "branch_id": "brn_main",
+        "label": "路线B：先校准再分配（主线）",
+        "card": {
+          "aim": "先校准概率，再交给同一个分配器",
+          "evidence_for": "校准后概率误差 0.142 → 0.058",
+          "evidence_against": "晚高峰仍不准（0.113）",
+          "completion": null,
+          "cost": "低",
+          "status": "主线，实验进行中"
+        },
+        "dims": {
+          "problem": {
+            "text": "修正概率的系统性偏高，再交给同一分配器。",
+            "refs": []
+          },
+          "assumptions": {
+            "text": "偏差可以用一个温度参数整体修正；概率更可靠会带来更多按时完成的任务（后者未检验）。",
+            "refs": [
+              "clm_completion"
+            ]
+          },
+          "support": {
+            "text": "测试划分ECE从0.142降到0.058（预测层）。",
+            "refs": [
+              "evd_ece_test"
+            ]
+          },
+          "counter": {
+            "text": "晚高峰校准后ECE仍为0.113。",
+            "refs": [
+              "evd_peak"
+            ]
+          },
+          "open": {
+            "text": "任务完成率是否提高：对照实验进行中。",
+            "refs": [
+              "run_alloc_v2"
+            ]
+          },
+          "cost": {
+            "text": "低：新增一个校准步骤；对照实验约4小时计算。",
+            "refs": []
+          },
+          "interpretability": {
+            "text": "较高：只增加一个参数T。",
+            "refs": []
+          },
+          "decision": {
+            "text": "主线（dec_route_b 已采用）。",
+            "refs": [
+              "dec_route_b"
+            ]
+          }
+        }
+      },
+      {
+        "branch_id": "brn_c",
+        "label": "路线C：简化分配评分",
+        "card": {
+          "aim": "去掉评分里的可靠性项，看是否一样好",
+          "evidence_for": null,
+          "evidence_against": null,
+          "completion": null,
+          "cost": "中",
+          "status": "等你决定何时开始"
+        },
+        "dims": {
+          "problem": {
+            "text": "检验评分中的可靠性加权项是否必要。",
+            "refs": []
+          },
+          "assumptions": {
+            "text": "去掉可靠性项不会降低完成率（待检验）。",
+            "refs": [
+              "clm_weight_needed"
+            ]
+          },
+          "support": null,
+          "counter": null,
+          "open": {
+            "text": "全部结果未知；尚未开展。",
+            "refs": []
+          },
+          "cost": {
+            "text": "中：需独立工作区，约6小时计算。",
+            "refs": []
+          },
+          "interpretability": {
+            "text": "若成立则更高：评分少一项。",
+            "refs": []
+          },
+          "decision": {
+            "text": "待决定（dec_start_c）。",
+            "refs": [
+              "dec_start_c"
+            ]
+          }
+        }
+      },
+      {
+        "branch_id": "brn_net",
+        "label": "备选：复杂预测网络（已关闭）",
+        "card": {
+          "aim": "换更复杂的网络，提高位置预测精度",
+          "evidence_for": null,
+          "evidence_against": "失败主要不是因为位置误差大",
+          "completion": null,
+          "cost": "高",
+          "status": "已关闭"
+        },
+        "dims": {
+          "problem": {
+            "text": "提高位置预测精度。",
+            "refs": []
+          },
+          "assumptions": {
+            "text": "失败主要来自位置误差大。",
+            "refs": []
+          },
+          "support": null,
+          "counter": {
+            "text": "位置误差最大的四分之一只占失败的18%。",
+            "refs": [
+              "evd_failure_analysis"
+            ]
+          },
+          "open": {
+            "text": "新网络能把误差降低多少：未测量。",
+            "refs": []
+          },
+          "cost": {
+            "text": "高：新网络训练与调参，预计两到三周。",
+            "refs": []
+          },
+          "interpretability": {
+            "text": "低。",
+            "refs": []
+          },
+          "decision": {
+            "text": "已关闭（dec_no_network），有恢复条件。",
+            "refs": [
+              "dec_no_network"
+            ]
+          }
+        }
+      }
+    ],
+    "groups": [
+      {
+        "id": "G_budget100",
+        "label": "任务完成率 · 测试划分 · 预算100 · 时限30分钟 · 种子11–15",
+        "comparable": true,
+        "note": "同一组条件，可以并列比较。"
+      },
+      {
+        "id": "G_legacy",
+        "label": "任务完成率 · 单一种子11（旧评价规则 dec_eval_v1）",
+        "comparable": false,
+        "note": "只用一个随机种子，且早于现行评价规则 dec_eval_v2；不能与5个种子的结果放进同一排名。"
+      },
+      {
+        "id": "G_ece",
+        "label": "ECE · 测试划分 · 种子11–15",
+        "comparable": true,
+        "note": "预测层指标：可以比较路线A与B的概率可靠性，但不能代表任务完成率。"
+      }
+    ],
+    "metrics": [
+      {
+        "route_branch_id": "brn_a",
+        "metric": "任务完成率",
+        "layer": "系统层",
+        "value": 0.71,
+        "range": "0.69–0.73",
+        "condition": "测试划分 · 预算100 · 时限30分钟 · 种子11–15",
+        "definition": "按时完成任务数 ÷ 发布任务数",
+        "group_id": "G_budget100",
+        "run_id": "run_baseline"
+      },
+      {
+        "route_branch_id": "brn_main",
+        "metric": "任务完成率",
+        "layer": "系统层",
+        "value": null,
+        "range": null,
+        "condition": "同上（run_alloc_v2 进行中）",
+        "definition": "按时完成任务数 ÷ 发布任务数",
+        "group_id": "G_budget100",
+        "run_id": "run_alloc_v2"
+      },
+      {
+        "route_branch_id": "brn_c",
+        "metric": "任务完成率",
+        "layer": "系统层",
+        "value": null,
+        "range": null,
+        "condition": "尚未开展",
+        "definition": "按时完成任务数 ÷ 发布任务数",
+        "group_id": "G_budget100",
+        "run_id": null
+      },
+      {
+        "route_branch_id": "brn_a",
+        "metric": "任务完成率",
+        "layer": "系统层",
+        "value": 0.74,
+        "range": null,
+        "condition": "测试划分 · 预算100 · 单一种子11",
+        "definition": "按时完成任务数 ÷ 发布任务数",
+        "group_id": "G_legacy",
+        "run_id": "run_baseline_1s"
+      },
+      {
+        "route_branch_id": "brn_a",
+        "metric": "ECE（原始概率）",
+        "layer": "预测层",
+        "value": 0.142,
+        "range": null,
+        "condition": "测试划分 · 种子11–15",
+        "definition": "期望校准误差，越小越可靠",
+        "group_id": "G_ece",
+        "run_id": "run_calib"
+      },
+      {
+        "route_branch_id": "brn_main",
+        "metric": "ECE（校准后）",
+        "layer": "预测层",
+        "value": 0.058,
+        "range": null,
+        "condition": "测试划分 · 种子11–15",
+        "definition": "期望校准误差，越小越可靠",
+        "group_id": "G_ece",
+        "run_id": "run_calib"
+      }
+    ]
+  },
+  "reliability_curves": [
+    {
+      "id": "rc_val_raw",
+      "title": "验证划分：原始到达概率",
+      "evidence_id": "evd_reliability_a",
+      "split": "验证划分",
+      "series": [
+        {
+          "label": "原始概率",
+          "points": [
+            {
+              "predicted": 0.05,
+              "observed": 0.05,
+              "n": 2400
+            },
+            {
+              "predicted": 0.15,
+              "observed": 0.14,
+              "n": 2100
+            },
+            {
+              "predicted": 0.25,
+              "observed": 0.24,
+              "n": 1900
+            },
+            {
+              "predicted": 0.35,
+              "observed": 0.33,
+              "n": 1800
+            },
+            {
+              "predicted": 0.45,
+              "observed": 0.42,
+              "n": 1950
+            },
+            {
+              "predicted": 0.55,
+              "observed": 0.48,
+              "n": 2050
+            },
+            {
+              "predicted": 0.65,
+              "observed": 0.53,
+              "n": 2200
+            },
+            {
+              "predicted": 0.75,
+              "observed": 0.58,
+              "n": 2600
+            },
+            {
+              "predicted": 0.85,
+              "observed": 0.62,
+              "n": 1840
+            },
+            {
+              "predicted": 0.95,
+              "observed": 0.66,
+              "n": 2160
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rc_test",
+      "title": "测试划分：校准前后",
+      "evidence_id": "evd_ece_test",
+      "split": "测试划分（全天）",
+      "series": [
+        {
+          "label": "校准前",
+          "points": [
+            {
+              "predicted": 0.05,
+              "observed": 0.05,
+              "n": 2900
+            },
+            {
+              "predicted": 0.15,
+              "observed": 0.15,
+              "n": 2600
+            },
+            {
+              "predicted": 0.25,
+              "observed": 0.24,
+              "n": 2300
+            },
+            {
+              "predicted": 0.35,
+              "observed": 0.34,
+              "n": 2200
+            },
+            {
+              "predicted": 0.45,
+              "observed": 0.43,
+              "n": 2400
+            },
+            {
+              "predicted": 0.55,
+              "observed": 0.49,
+              "n": 2500
+            },
+            {
+              "predicted": 0.65,
+              "observed": 0.55,
+              "n": 2700
+            },
+            {
+              "predicted": 0.75,
+              "observed": 0.6,
+              "n": 3100
+            },
+            {
+              "predicted": 0.85,
+              "observed": 0.64,
+              "n": 2300
+            },
+            {
+              "predicted": 0.95,
+              "observed": 0.69,
+              "n": 2600
+            }
+          ]
+        },
+        {
+          "label": "校准后",
+          "points": [
+            {
+              "predicted": 0.07,
+              "observed": 0.06,
+              "n": 2900
+            },
+            {
+              "predicted": 0.16,
+              "observed": 0.15,
+              "n": 2600
+            },
+            {
+              "predicted": 0.26,
+              "observed": 0.25,
+              "n": 2300
+            },
+            {
+              "predicted": 0.35,
+              "observed": 0.35,
+              "n": 2200
+            },
+            {
+              "predicted": 0.44,
+              "observed": 0.45,
+              "n": 2400
+            },
+            {
+              "predicted": 0.52,
+              "observed": 0.53,
+              "n": 2500
+            },
+            {
+              "predicted": 0.59,
+              "observed": 0.6,
+              "n": 2700
+            },
+            {
+              "predicted": 0.66,
+              "observed": 0.67,
+              "n": 3100
+            },
+            {
+              "predicted": 0.73,
+              "observed": 0.75,
+              "n": 2300
+            },
+            {
+              "predicted": 0.8,
+              "observed": 0.83,
+              "n": 2600
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rc_peak",
+      "title": "测试划分：晚高峰（17:00–19:00）校准后",
+      "evidence_id": "evd_peak",
+      "split": "测试划分（晚高峰）",
+      "series": [
+        {
+          "label": "晚高峰·校准后",
+          "points": [
+            {
+              "predicted": 0.07,
+              "observed": 0.06,
+              "n": 260
+            },
+            {
+              "predicted": 0.16,
+              "observed": 0.14,
+              "n": 230
+            },
+            {
+              "predicted": 0.26,
+              "observed": 0.23,
+              "n": 210
+            },
+            {
+              "predicted": 0.35,
+              "observed": 0.31,
+              "n": 200
+            },
+            {
+              "predicted": 0.44,
+              "observed": 0.38,
+              "n": 220
+            },
+            {
+              "predicted": 0.52,
+              "observed": 0.44,
+              "n": 230
+            },
+            {
+              "predicted": 0.59,
+              "observed": 0.5,
+              "n": 240
+            },
+            {
+              "predicted": 0.66,
+              "observed": 0.55,
+              "n": 280
+            },
+            {
+              "predicted": 0.73,
+              "observed": 0.6,
+              "n": 200
+            },
+            {
+              "predicted": 0.8,
+              "observed": 0.66,
+              "n": 240
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "rule_checks": {
+    "pro_add_network": [
+      {
+        "rule": "与有效约束冲突",
+        "detail": "约束 cst_complexity 要求增加复杂度前说明对任务完成率的贡献依据；本建议没有附任何证据。",
+        "refs": [
+          "prj_mcs"
+        ]
+      },
+      {
+        "rule": "准备重复已关闭的探索",
+        "detail": "与已关闭路线“备选：增加复杂预测网络”方向相同；关闭时记录的恢复条件（对照实验显示概率仍是主要瓶颈）尚未满足——对照实验仍在进行。",
+        "refs": [
+          "brn_net",
+          "dec_no_network",
+          "unt_net_eval"
+        ]
+      },
+      {
+        "rule": "效果声称缺少依据",
+        "detail": "“预计能显著改善任务完成率”是模型自述，没有对应证据。",
+        "refs": []
+      }
+    ],
+    "pro_c_timing": [
+      {
+        "rule": "资源冲突",
+        "detail": "现在开展会与正在运行的 run_alloc_v2 同时占用同一GPU。",
+        "refs": [
+          "run_alloc_v2"
+        ]
+      },
+      {
+        "rule": "工作目录冲突风险",
+        "detail": "需要为路线C新建独立工作区；否则两条实验会修改同一份评分代码 src/scoring.py。",
+        "refs": []
+      }
+    ],
+    "pro_alloc_metrics": [
+      {
+        "rule": "在既有授权范围内",
+        "detail": "修改类型 unit.revise、目标 unt_alloc_exp，都在授权 grt_routine 范围内；不涉及主张、决定或目标。",
+        "refs": [
+          "grt_routine"
+        ]
+      }
+    ],
+    "pro_c_open": [
+      {
+        "rule": "人工采用",
+        "detail": "只建立待决定事项，不选择任何选项。",
+        "refs": [
+          "dec_start_c"
+        ]
+      }
+    ]
+  },
+  "test_materials": {
+    "unt_baseline": {
+      "harness_summary": "跑完baseline（direct prob，budget=100，T=30min，seeds 11-15），TCR=0.71±0.02。比之前单seed的0.74略低，属正常波动。失败612次，主要是高p未到达。配置已更新到eval v2。",
+      "summary_note": "模拟“原Harness总结”的写法：缩写密集、依赖上文。"
+    },
+    "unt_a_diag": {
+      "harness_summary": "已做reliability诊断：val上0.8-0.9 bin实际只有0.62，明显overconfident，<0.5基本OK。说明直接用prob分配有问题，建议转calibration路线。",
+      "summary_note": "模拟“原Harness总结”的写法。"
+    },
+    "unt_calib_design": {
+      "harness_summary": "选TS而非isotonic，理由见综述5.2（单参、保序、小样本稳）。实现了fit_temperature/apply_temperature，allocator未改。T在val上拟合。",
+      "summary_note": "模拟“原Harness总结”的写法。"
+    },
+    "unt_calib_exp": {
+      "harness_summary": "TS校准完成并重新训练，test ECE 0.142→0.058（5 seeds，T≈1.84），校准有效。peak子集0.113略高，可能是样本少。整体符合预期，可以进入alloc对比。",
+      "summary_note": "模拟“原Harness总结”的写法；其中“重新训练”“校准有效”是模型常见的过度表述。"
+    },
+    "unt_alloc_exp": {
+      "harness_summary": "alloc_compare v1挂了（路径问题，已修），v2在跑，budget 50/100/200×5 seeds。按上面的ECE改善，预计TCR会提升。已加failed_assignments统计。",
+      "summary_note": "模拟“原Harness总结”的写法；“预计TCR会提升”属于无证据的预期。"
+    },
+    "unt_c_weight": {
+      "harness_summary": "从ckp_calib拉了路线C，测简化score（去掉reliability项）。建议现在并行跑，两天后一起出结论。",
+      "summary_note": "模拟“原Harness总结”的写法。"
+    }
+  }
+}

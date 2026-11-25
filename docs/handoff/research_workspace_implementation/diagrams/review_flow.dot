@@ -1,0 +1,24 @@
+digraph ReviewFlow {
+  graph [bgcolor="white", fontname="Noto Sans CJK SC", fontsize=16, rankdir=TB, pad=0.25, nodesep=0.5, ranksep=0.42, splines=polyline, outputorder=edgesfirst, dpi=200, labelloc=b, label="采纳决定与科学有效性分别记录"];
+  node [shape=box, style="rounded,filled", fillcolor="#F7F9FC", color="#7A8899", fontcolor="#172B42", fontname="Noto Sans CJK SC", fontsize=18, penwidth=1.4, margin="0.18,0.12"];
+  edge [color="#77869A", arrowsize=0.7, penwidth=1.5, fontname="Noto Sans CJK SC", fontsize=14, fontcolor="#44546A"];
+  observed [label="实际事件\n消息 · 修改 · 运行"];
+  candidate [label="候选解释\n保留来源与版本"];
+  check [shape=diamond, label="背景与来源\n校验", fillcolor="#FFF8EC", color="#B68A41", margin="0.15,0.08"];
+  brief [label="阅读简报\n背景 · 发现 · 边界", fillcolor="#EAF0F8", color="#3D648E"];
+  choice [label="选择处理方式\n人或有效既有授权"];
+  revision [label="形成新修订\n保留决定与依据", fillcolor="#EDF6F2", color="#47856F"];
+  source [label="原始证据\n可定位 · 可追溯", fillcolor="#EDF6F2", color="#47856F"];
+  missing [label="待补充\n不进入确认状态", fillcolor="#FFF8EC", color="#B68A41"];
+  observed -> candidate;
+  candidate -> check;
+  check -> brief [label="通过"];
+  brief -> choice;
+  choice -> revision;
+  observed -> source [label="保存", constraint=false];
+  source -> check [style=dashed, label="核验依据", color="#47856F", constraint=false];
+  brief -> source [style=dashed, label="查看原文", color="#47856F", constraint=false];
+  check -> missing [label="不通过", color="#B68A41", fontcolor="#8B652D"];
+  {rank=same; candidate; source;}
+  {rank=same; check; missing;}
+}

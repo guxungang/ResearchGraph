@@ -1,0 +1,1873 @@
+{
+  "schema_version": "1.0.0",
+  "export_kind": "project_snapshot",
+  "exported_at": "2026-11-25T04:00:00Z",
+  "example_notice": "本文件所有项目、人物身份、来源、指标、哈希和事件均为虚构夹具。仅验证数据结构和关系；不代表真实证据、可复现实验或有效生产授权。事件数组为样例，不是该快照的完整可重放日志。",
+  "last_event_seq": 1,
+  "project": {
+    "id": "prj_demo",
+    "revision": 1,
+    "project_id": "prj_demo",
+    "created_at": "2026-11-25T04:00:00Z",
+    "updated_at": "2026-11-25T04:00:00Z",
+    "valid_time": {
+      "from": "2026-11-25T04:00:00Z",
+      "to": null
+    },
+    "provenance": {
+      "observation_kind": "observed",
+      "source_refs": [
+        {
+          "kind": "user_action",
+          "precision": "exact",
+          "correlation_method": "direct_id",
+          "content_sha256": null,
+          "captured_at": "2026-11-25T04:00:00Z",
+          "description": "虚构示例中的明确用户操作",
+          "action_id": "act_demo",
+          "ui_surface": "decision-card",
+          "request_id": "req-demo-1"
+        }
+      ],
+      "created_by": {
+        "principal_id": "usr_demo",
+        "kind": "human",
+        "authentication_ref": "auth_demo_local",
+        "grant_id": null
+      },
+      "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+    },
+    "name": "移动群智感知方法研究 虚构示例",
+    "goal": "评估预测可靠性信息是否能改善有限预算下的采集任务分配。",
+    "problem_statement": "仅用位置预测的单一概率可能无法反映不同车辆的可靠程度，需要比较校准前后的任务分配表现。",
+    "in_scope": [
+      "预测校准",
+      "分配机制验证"
+    ],
+    "out_of_scope": [
+      "通信协议设计"
+    ],
+    "constraints": [
+      {
+        "id": "cst_budget",
+        "text": "方法复杂性增加必须先说明对核心研究问题的贡献。",
+        "source_ref": {
+          "kind": "user_action",
+          "precision": "exact",
+          "correlation_method": "direct_id",
+          "content_sha256": null,
+          "captured_at": "2026-11-25T04:00:00Z",
+          "description": "虚构示例中的明确用户操作",
+          "action_id": "act_demo",
+          "ui_surface": "decision-card",
+          "request_id": "req-demo-1"
+        }
+      }
+    ],
+    "main_branch_id": "brn_main",
+    "focus_unit_id": "unt_allocation",
+    "status": "active",
+    "language": "zh-CN",
+    "timezone": "Australia/Melbourne"
+  },
+  "branches": [
+    {
+      "id": "brn_main",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "name": "简化校准路线",
+      "purpose": "先完成预测校准与任务分配的独立验证。",
+      "state": "active",
+      "derived_from_branch_id": null,
+      "base_unit_id": null,
+      "base_checkpoint_id": null,
+      "context_revision": 1,
+      "effective_decision_ids": [
+        "dec_simple"
+      ],
+      "open_claim_ids": [
+        "clm_allocation"
+      ],
+      "closure_reason": null
+    },
+    {
+      "id": "brn_complex",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "name": "复杂网络备选路线",
+      "purpose": "评估额外网络是否值得增加。",
+      "state": "closed",
+      "derived_from_branch_id": "brn_main",
+      "base_unit_id": "unt_baseline",
+      "base_checkpoint_id": "ckp_baseline",
+      "context_revision": 1,
+      "effective_decision_ids": [],
+      "open_claim_ids": [],
+      "closure_reason": "现有证据不能说明新增复杂度对核心目标有必要性；保留方案供未来条件变化时重评。"
+    }
+  ],
+  "research_units": [
+    {
+      "id": "unt_baseline",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "branch_id": "brn_main",
+      "title": "比较基础预测的校准误差",
+      "question": "比较基础预测的校准误差是否满足本阶段需求？",
+      "purpose": "为项目最终研究目标提供可核验的结果。",
+      "work_state": "finished",
+      "parent_unit_ids": [],
+      "claim_ids": [
+        "clm_calibration"
+      ],
+      "decision_ids": [],
+      "evidence_ids": [
+        "evd_calibration"
+      ],
+      "artifact_version_ids": [
+        "art_metrics"
+      ],
+      "acceptance_criteria": [],
+      "blocker": null,
+      "next_action": "查验现有证据并开展当前节点对应工作。",
+      "owner_principal_id": "usr_demo",
+      "completion": {
+        "kind": "closed_with_limitations",
+        "basis": "本单元结束初步指标收集，原始数据和科学解释仍需审阅；不宣称证据已核验。",
+        "evidence_ids": [
+          "evd_calibration"
+        ],
+        "review_ids": [],
+        "completed_at": "2026-11-25T04:00:00Z"
+      }
+    },
+    {
+      "id": "unt_allocation",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "branch_id": "brn_main",
+      "title": "验证校准是否提高最终任务完成率",
+      "question": "验证校准是否提高最终任务完成率是否满足本阶段需求？",
+      "purpose": "为项目最终研究目标提供可核验的结果。",
+      "work_state": "active",
+      "parent_unit_ids": [
+        "unt_baseline"
+      ],
+      "claim_ids": [
+        "clm_allocation"
+      ],
+      "decision_ids": [
+        "dec_simple"
+      ],
+      "evidence_ids": [],
+      "artifact_version_ids": [],
+      "acceptance_criteria": [
+        {
+          "id": "cri_ablation",
+          "description": "完成相同数据划分和预算下的任务分配对照实验并保存可复核结果。",
+          "required_evidence_kind": "experiment",
+          "mandatory": true
+        }
+      ],
+      "blocker": null,
+      "next_action": "查验现有证据并开展当前节点对应工作。",
+      "owner_principal_id": "usr_demo",
+      "completion": null
+    },
+    {
+      "id": "unt_complex",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "branch_id": "brn_complex",
+      "title": "分析额外预测网络的必要性",
+      "question": "分析额外预测网络的必要性是否满足本阶段需求？",
+      "purpose": "为项目最终研究目标提供可核验的结果。",
+      "work_state": "archived",
+      "parent_unit_ids": [
+        "unt_baseline"
+      ],
+      "claim_ids": [],
+      "decision_ids": [],
+      "evidence_ids": [],
+      "artifact_version_ids": [],
+      "acceptance_criteria": [],
+      "blocker": null,
+      "next_action": "查验现有证据并开展当前节点对应工作。",
+      "owner_principal_id": "usr_demo",
+      "completion": null
+    }
+  ],
+  "graph_edges": [
+    {
+      "id": "edg_main",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "source_id": "unt_baseline",
+      "target_id": "unt_allocation",
+      "relation": "continues_to",
+      "branch_id": "brn_main",
+      "rationale": "完成预测层验证后开展任务分配验证。",
+      "state": "active",
+      "source_revision": 1,
+      "target_revision": 1,
+      "binding_semantics": "identity_lineage",
+      "currency": "current"
+    },
+    {
+      "id": "edg_branch",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "source_id": "unt_baseline",
+      "target_id": "unt_complex",
+      "relation": "continues_to",
+      "branch_id": "brn_complex",
+      "rationale": "从基础比较产生备选探索。",
+      "state": "active",
+      "source_revision": 1,
+      "target_revision": 1,
+      "binding_semantics": "identity_lineage",
+      "currency": "current"
+    },
+    {
+      "id": "edg_evidence",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "source_id": "evd_calibration",
+      "target_id": "clm_calibration",
+      "relation": "supports",
+      "branch_id": "brn_main",
+      "rationale": "该实验仅支撑指定测试划分下的校准误差结论。",
+      "state": "active",
+      "source_revision": 1,
+      "target_revision": 1,
+      "binding_semantics": "exact_revision",
+      "currency": "current"
+    }
+  ],
+  "claims": [
+    {
+      "id": "clm_calibration",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "text": "预测校准在指定测试划分下降低预测概率误差。",
+      "claim_kind": "finding",
+      "assessment": "unassessed",
+      "conditions": "需核对原始指标与数据划分，不能扩展到其他数据集。",
+      "evidence_ids": [
+        "evd_calibration"
+      ],
+      "assessed_by_review_ids": [],
+      "supersedes_claim_id": null,
+      "branch_ids": [
+        "brn_main"
+      ]
+    },
+    {
+      "id": "clm_allocation",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "text": "预测校准能够提高有限预算下的任务完成率。",
+      "claim_kind": "hypothesis",
+      "assessment": "inconclusive",
+      "conditions": "尚缺相同配置下校准与未校准的任务分配对照实验。",
+      "evidence_ids": [],
+      "assessed_by_review_ids": [],
+      "supersedes_claim_id": null,
+      "branch_ids": [
+        "brn_main"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evd_calibration",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "title": "固定测试划分的预测校准误差比较",
+      "evidence_kind": "experiment_result",
+      "statement": "虚构数据中，校准后ECE为0.06；该结果不能直接说明任务完成率提高。",
+      "source_locator": {
+        "kind": "experiment",
+        "precision": "exact",
+        "correlation_method": "direct_id",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "captured_at": "2026-11-25T04:00:00Z",
+        "description": "虚构指标记录中的ECE字段",
+        "experiment_run_id": "run_calibration",
+        "artifact_version_id": "art_metrics",
+        "metric_name": "ece",
+        "record_path": "/metrics/ece"
+      },
+      "artifact_version_ids": [
+        "art_metrics"
+      ],
+      "experiment_run_id": "run_calibration",
+      "scope": "仅限虚构数据清单中的固定测试划分。",
+      "limitations": "没有任务分配消融结果；示例文件不提供真实数据。",
+      "availability": "external_unchecked",
+      "verification_status": "not_checked"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "dec_simple",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "question": "当前先验证已有方法还是新增预测网络？",
+      "options": [
+        {
+          "id": "opt_simple",
+          "label": "先验证简化校准",
+          "description": "使用现有预测器及简单校准，先完成必要对照实验。",
+          "expected_benefit": "可区分概率改善与分配收益。",
+          "cost_and_risk": "收益仍可能不显著。",
+          "evidence_ids": []
+        },
+        {
+          "id": "opt_deep",
+          "label": "立即增加复杂预测网络",
+          "description": "增加预测模块后重新训练。",
+          "expected_benefit": "可能改善预测能力。",
+          "cost_and_risk": "可能分散主线并增加验证成本。",
+          "evidence_ids": []
+        }
+      ],
+      "status": "accepted",
+      "accepted_option_id": "opt_simple",
+      "rationale": "先检验核心因果链条，减少未经验证的复杂性。",
+      "evidence_ids": [],
+      "branch_ids": [
+        "brn_main"
+      ],
+      "authorized_by_grant_id": "grt_demo",
+      "acceptance_source": {
+        "kind": "user_action",
+        "precision": "exact",
+        "correlation_method": "direct_id",
+        "content_sha256": null,
+        "captured_at": "2026-11-25T04:00:00Z",
+        "description": "虚构示例中的明确用户操作",
+        "action_id": "act_demo",
+        "ui_surface": "decision-card",
+        "request_id": "req-demo-1"
+      },
+      "superseded_by_decision_id": null,
+      "reconsider_when": "核心对照表明现有预测能力构成主要瓶颈时重评。",
+      "authorization_grant_revision": 1,
+      "accepted_at": "2026-11-25T04:00:00Z"
+    }
+  ],
+  "artifact_versions": [
+    {
+      "id": "art_metrics",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "logical_artifact_id": "log_metrics",
+      "title": "虚构预测校准指标",
+      "media_type": "application/json",
+      "version_label": "demo-v1",
+      "storage_ref": {
+        "kind": "local",
+        "location": "examples/metrics.json"
+      },
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byte_size": 128,
+      "availability": "external_unchecked",
+      "previous_version_id": null,
+      "produced_by_unit_id": "unt_baseline",
+      "version_pinning": "metadata_only"
+    },
+    {
+      "id": "art_config",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "logical_artifact_id": "log_config",
+      "title": "虚构运行配置",
+      "media_type": "application/json",
+      "version_label": "demo-v1",
+      "storage_ref": {
+        "kind": "local",
+        "location": "examples/config.json"
+      },
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byte_size": 128,
+      "availability": "external_unchecked",
+      "previous_version_id": null,
+      "produced_by_unit_id": "unt_baseline",
+      "version_pinning": "metadata_only"
+    },
+    {
+      "id": "art_environment",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "logical_artifact_id": "log_environment",
+      "title": "虚构环境锁文件",
+      "media_type": "text/plain",
+      "version_label": "demo-v1",
+      "storage_ref": {
+        "kind": "local",
+        "location": "examples/requirements.lock"
+      },
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byte_size": 128,
+      "availability": "external_unchecked",
+      "previous_version_id": null,
+      "produced_by_unit_id": "unt_baseline",
+      "version_pinning": "metadata_only"
+    },
+    {
+      "id": "art_dataset",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "logical_artifact_id": "log_dataset",
+      "title": "虚构数据清单",
+      "media_type": "application/json",
+      "version_label": "demo-v1",
+      "storage_ref": {
+        "kind": "local",
+        "location": "examples/dataset-manifest.json"
+      },
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "byte_size": 128,
+      "availability": "external_unchecked",
+      "previous_version_id": null,
+      "produced_by_unit_id": "unt_baseline",
+      "version_pinning": "metadata_only"
+    }
+  ],
+  "experiment_runs": [
+    {
+      "id": "run_calibration",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "unit_id": "unt_baseline",
+      "branch_id": "brn_main",
+      "run_state": "succeeded",
+      "command_display": "python evaluate_calibration.py --config examples/config.json",
+      "code_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "config_artifact_version_id": "art_config",
+      "dataset_artifact_version_ids": [
+        "art_dataset"
+      ],
+      "environment_artifact_version_id": "art_environment",
+      "random_seeds": [
+        11
+      ],
+      "comparison_group_id": "cmp_calibration",
+      "external_job_id": null,
+      "started_at": "2026-11-25T04:00:00Z",
+      "ended_at": "2026-11-25T04:00:00Z",
+      "last_observed_at": "2026-11-25T04:00:00Z",
+      "exit_code": 0,
+      "metrics": [
+        {
+          "name": "ece",
+          "value": 0.06,
+          "unit": "ratio",
+          "split": "test",
+          "aggregation": "single seed",
+          "sample_count": 1000,
+          "direction": "lower_better"
+        }
+      ],
+      "output_artifact_version_ids": [
+        "art_metrics"
+      ],
+      "source_locator": {
+        "kind": "experiment",
+        "precision": "exact",
+        "correlation_method": "direct_id",
+        "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "captured_at": "2026-11-25T04:00:00Z",
+        "description": "虚构指标记录中的ECE字段",
+        "experiment_run_id": "run_calibration",
+        "artifact_version_id": "art_metrics",
+        "metric_name": "ece",
+        "record_path": "/metrics/ece"
+      },
+      "capture_completeness": "partial",
+      "missing_fields": [
+        "示例未附带真实数据与环境文件"
+      ]
+    }
+  ],
+  "checkpoints": [
+    {
+      "id": "ckp_baseline",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "title": "基础验证后的认知检查点",
+      "branch_id": "brn_main",
+      "unit_id": "unt_baseline",
+      "project_revision": 1,
+      "branch_context_revision": 1,
+      "entity_revision_refs": [
+        {
+          "entity_id": "unt_baseline",
+          "revision": 1
+        },
+        {
+          "entity_id": "dec_simple",
+          "revision": 1
+        }
+      ],
+      "effective_decision_ids": [
+        "dec_simple"
+      ],
+      "known_claim_ids": [
+        "clm_calibration",
+        "clm_allocation"
+      ],
+      "file_manifest": [
+        {
+          "artifact_version_id": "art_metrics",
+          "relative_path": "examples/metrics.json",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_role": "output",
+          "availability": "external_unchecked"
+        },
+        {
+          "artifact_version_id": "art_config",
+          "relative_path": "examples/config.json",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_role": "config",
+          "availability": "external_unchecked"
+        },
+        {
+          "artifact_version_id": "art_environment",
+          "relative_path": "examples/requirements.lock",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_role": "config",
+          "availability": "external_unchecked"
+        },
+        {
+          "artifact_version_id": "art_dataset",
+          "relative_path": "examples/dataset-manifest.json",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "restore_role": "config",
+          "availability": "external_unchecked"
+        }
+      ],
+      "git_snapshot": {
+        "repository_alias": "demo_repo",
+        "commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "dirty_patch_artifact_version_id": null,
+        "untracked_artifact_version_ids": []
+      },
+      "restore_readiness": "knowledge_only",
+      "limitations": [
+        "仅演示清单格式；不提供真实文件内容，不能恢复可执行实验。"
+      ]
+    }
+  ],
+  "proposals": [
+    {
+      "id": "pro_add_network",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "inferred",
+        "source_refs": [
+          {
+            "kind": "message",
+            "precision": "exact",
+            "correlation_method": "content_hash",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例会话中的模型建议",
+            "source_instance_id": "src_demo",
+            "session_id": "provider-demo-session",
+            "message_id": "demo-message-2",
+            "message_role": "assistant",
+            "span": null
+          }
+        ],
+        "created_by": {
+          "principal_id": "agt_demo",
+          "kind": "agent",
+          "authentication_ref": "auth_demo_adapter",
+          "grant_id": null
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "title": "探索复杂网络的候选建议",
+      "summary": "模型建议增加新预测网络，该建议尚未获准。",
+      "status": "candidate",
+      "base_project_revision": 1,
+      "target_revision_refs": [
+        {
+          "entity_id": "dec_simple",
+          "revision": 1
+        }
+      ],
+      "commands": [
+        {
+          "kind": "create_research_unit",
+          "branch_id": "brn_main",
+          "title": "评估新增预测网络",
+          "question": "新增网络是否解决现有方法已证实的瓶颈？",
+          "purpose": "先形成必要性分析，再决定是否实现。",
+          "parent_unit_ids": [
+            "unt_allocation"
+          ],
+          "acceptance_criteria": []
+        }
+      ],
+      "evidence_ids": [],
+      "expected_impact": "可能改变当前工作重心；应先检查是否有足够动机。",
+      "risk_and_uncertainty": "当前任务分配对照尚未完成。",
+      "requested_grant_actions": [
+        "unit.create"
+      ],
+      "created_by": {
+        "principal_id": "agt_demo",
+        "kind": "agent",
+        "authentication_ref": "auth_demo_adapter",
+        "grant_id": null
+      },
+      "applied_by_event_id": null
+    }
+  ],
+  "reviews": [
+    {
+      "id": "rev_decision",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "target_id": "dec_simple",
+      "reviewed_revision": 1,
+      "review_kind": "user_review",
+      "status": "accepted",
+      "reviewer": {
+        "principal_id": "usr_demo",
+        "kind": "human",
+        "authentication_ref": "auth_demo_local",
+        "grant_id": "grt_demo"
+      },
+      "understanding_status": "self_reported_understood",
+      "findings": [
+        "用户接受先完成必要实验的顺序；没有确认任何科学假设成立。"
+      ],
+      "evidence_ids": [],
+      "is_current": true,
+      "source_revision_refs": [
+        {
+          "entity_id": "dec_simple",
+          "revision": 1
+        }
+      ]
+    }
+  ],
+  "session_bindings": [
+    {
+      "id": "ses_allocation",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "connection_mode": "sidecar",
+      "harness_instance_id": "src_demo",
+      "provider_session_id": "provider-demo-session",
+      "provider_turn_id": "provider-demo-turn",
+      "unit_id": "unt_allocation",
+      "branch_id": "brn_main",
+      "context_bundle_id": "ctx_allocation",
+      "worktree_ref": null,
+      "base_project_revision": 1,
+      "binding_revision": 1,
+      "state": "running",
+      "last_observed_at": "2026-11-25T04:00:00Z",
+      "coverage": "partial",
+      "coverage_note": "这是合同示例，不代表真实连接；未验证的控制能力不可用。",
+      "interrupt_request_id": null,
+      "interrupt_confirmed_at": null
+    }
+  ],
+  "capability_manifests": [
+    {
+      "id": "cap_demo",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "harness_instance_id": "src_demo",
+      "provider": "codex",
+      "surface": "cli",
+      "provider_version": "example-unverified",
+      "adapter_version": "1.0.0",
+      "protocol_version": "example-unverified",
+      "connection_mode": "sidecar",
+      "status": "unverified",
+      "capabilities": {
+        "readHistory": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "observeMessages": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "observeTools": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "injectAtSessionStart": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "injectAtUserPrompt": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "injectAfterCompaction": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "createSession": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "resumeSession": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "forkSession": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "steerTurn": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "interruptTurn": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "mediateToolApproval": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        },
+        "checkpointFiles": {
+          "support": "unverified",
+          "scope": "需在用户实际版本和界面上探测。",
+          "limitations": [
+            "本示例没有连接真实Harness。"
+          ],
+          "evidence_urls": [],
+          "probed_at": null
+        }
+      }
+    }
+  ],
+  "context_bundles": [
+    {
+      "id": "ctx_allocation",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "branch_id": "brn_main",
+      "unit_id": "unt_allocation",
+      "branch_context_revision": 1,
+      "built_for": "session_start",
+      "base_project_revision": 1,
+      "items": [
+        {
+          "entity_id": "prj_demo",
+          "revision": 1,
+          "role": "goal",
+          "text": "评估预测可靠性信息是否能改善有限预算下的采集任务分配。",
+          "source_refs": [
+            {
+              "kind": "user_action",
+              "precision": "exact",
+              "correlation_method": "direct_id",
+              "content_sha256": null,
+              "captured_at": "2026-11-25T04:00:00Z",
+              "description": "虚构示例中的明确用户操作",
+              "action_id": "act_demo",
+              "ui_surface": "decision-card",
+              "request_id": "req-demo-1"
+            }
+          ],
+          "validity_note": "当前项目目标。"
+        },
+        {
+          "entity_id": "dec_simple",
+          "revision": 1,
+          "role": "decision",
+          "text": "先验证简化校准与任务分配的关系。",
+          "source_refs": [
+            {
+              "kind": "user_action",
+              "precision": "exact",
+              "correlation_method": "direct_id",
+              "content_sha256": null,
+              "captured_at": "2026-11-25T04:00:00Z",
+              "description": "虚构示例中的明确用户操作",
+              "action_id": "act_demo",
+              "ui_surface": "decision-card",
+              "request_id": "req-demo-1"
+            }
+          ],
+          "validity_note": "当前已接受的工作顺序。"
+        },
+        {
+          "entity_id": "clm_allocation",
+          "revision": 1,
+          "role": "question",
+          "text": "任务完成率提升尚未获得证据。",
+          "source_refs": [
+            {
+              "kind": "user_action",
+              "precision": "exact",
+              "correlation_method": "direct_id",
+              "content_sha256": null,
+              "captured_at": "2026-11-25T04:00:00Z",
+              "description": "虚构示例中的明确用户操作",
+              "action_id": "act_demo",
+              "ui_surface": "decision-card",
+              "request_id": "req-demo-1"
+            }
+          ],
+          "validity_note": "不得将预测误差改善写成分配性能已改善。"
+        }
+      ],
+      "excluded_items": [
+        {
+          "entity_id": "pro_add_network",
+          "reason": "未经采用的候选；保留检索入口但不作为当前任务指令。"
+        }
+      ],
+      "token_budget": 3000,
+      "estimated_tokens": 310,
+      "token_measurement": "estimated",
+      "snapshot_mode": "current_valid",
+      "counterevidence_included": true,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "history_basis": "not_applicable",
+      "as_of_time": null,
+      "history_label": "current_valid",
+      "reconstruction_note": "",
+      "generation": {
+        "mode": "template",
+        "model_provider": null,
+        "model_id": null,
+        "prompt_template_id": "demo-template",
+        "template_version": "1.0.0",
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generated_at": "2026-11-25T04:00:00Z",
+        "processing_command_id": null
+      }
+    }
+  ],
+  "reading_briefs": [
+    {
+      "id": "brf_allocation",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": "grt_demo"
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "unit_id": "unt_allocation",
+      "audience": "general_researcher",
+      "source_revision_refs": [
+        {
+          "entity_id": "prj_demo",
+          "revision": 1
+        },
+        {
+          "entity_id": "unt_allocation",
+          "revision": 1
+        },
+        {
+          "entity_id": "clm_allocation",
+          "revision": 1
+        }
+      ],
+      "title": "为什么下一步需要任务分配对照实验",
+      "project_background": "项目研究车辆在移动状态不确定时，如何用有限预算完成更多采集任务。系统先预测车辆到达位置的概率，再据此分配任务。",
+      "why_this_work": "预测概率更准确，并不自动意味着最终任务完成得更多。必须把预测改动放入相同的分配过程进行比较。",
+      "current_question": "校准后的概率是否提高了最终任务完成率？",
+      "prerequisites": [
+        {
+          "term": "概率校准",
+          "plain_explanation": "检查模型报出的概率是否与实际发生频率接近，例如预测有八成把握的情况是否约八成真正发生。",
+          "why_needed": "它解释预测层的改进，但不能直接证明系统收益。"
+        }
+      ],
+      "method_explanation": "固定数据划分、预算、分配算法和随机种子，仅切换是否进行概率校准，再比较任务完成率。",
+      "key_findings": [
+        "已有虚构预测指标，但原始文件尚待核对。"
+      ],
+      "not_yet_established": [
+        "没有任务分配对照结果，不能宣称最终完成率提升。"
+      ],
+      "implementation_changes": [],
+      "project_impact": "这个实验决定是否值得继续沿当前方法完善系统，避免因中间指标改善而过早扩展模型。",
+      "recommended_next_step": "先核对预测结果，再运行条件一致的任务分配对照实验。",
+      "decision_request": null,
+      "evidence_links": [
+        {
+          "evidence_id": "evd_calibration",
+          "label": "预测层指标及其适用范围",
+          "relationship": "background",
+          "source_locator": {
+            "kind": "experiment",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构指标记录中的ECE字段",
+            "experiment_run_id": "run_calibration",
+            "artifact_version_id": "art_metrics",
+            "metric_name": "ece",
+            "record_path": "/metrics/ece"
+          }
+        }
+      ],
+      "limitations": [
+        "所有数据均为合同演示，不能用于科研结论。"
+      ],
+      "readability_checks": {
+        "unexplained_terms": [],
+        "unresolved_references": [],
+        "source_gaps": [
+          "原始演示文件未附带。"
+        ],
+        "status": "needs_revision"
+      },
+      "generation": {
+        "mode": "template",
+        "model_provider": null,
+        "model_id": null,
+        "prompt_template_id": "demo-template",
+        "template_version": "1.0.0",
+        "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "generated_at": "2026-11-25T04:00:00Z",
+        "processing_command_id": null
+      }
+    }
+  ],
+  "grants": [
+    {
+      "id": "grt_demo",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "created_at": "2026-11-25T04:00:00Z",
+      "updated_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-11-25T04:00:00Z",
+            "description": "虚构示例中的明确用户操作",
+            "action_id": "act_demo",
+            "ui_surface": "decision-card",
+            "request_id": "req-demo-1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_demo",
+          "kind": "human",
+          "authentication_ref": "auth_demo_local",
+          "grant_id": null
+        },
+        "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+      },
+      "status": "active",
+      "subject_principal_ids": [
+        "usr_demo"
+      ],
+      "actions": [
+        "decision.accept",
+        "unit.create",
+        "unit.update",
+        "branch.create",
+        "checkpoint.create",
+        "session.start",
+        "session.interrupt",
+        "review.record"
+      ],
+      "scope": {
+        "kind": "project",
+        "project_id": "prj_demo"
+      },
+      "issued_by": {
+        "principal_id": "usr_demo",
+        "kind": "human",
+        "authentication_ref": "auth_demo_local",
+        "grant_id": null
+      },
+      "authorization_source": {
+        "kind": "user_action",
+        "precision": "exact",
+        "correlation_method": "direct_id",
+        "content_sha256": null,
+        "captured_at": "2026-11-25T04:00:00Z",
+        "description": "虚构示例中的明确用户操作",
+        "action_id": "act_demo",
+        "ui_surface": "decision-card",
+        "request_id": "req-demo-1"
+      },
+      "expires_at": null,
+      "max_cost_usd": null,
+      "revoked_at": null,
+      "reason": "虚构示例中的明确用户授权；未授权自动改变目标或核心假设。",
+      "application_policy": "human_only"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt_demo",
+      "revision": 1,
+      "project_id": "prj_demo",
+      "schema_version": "1.0.0",
+      "event_seq": 1,
+      "project_revision_after": 1,
+      "event_type": "project.created",
+      "actor": {
+        "principal_id": "usr_demo",
+        "kind": "human",
+        "authentication_ref": "auth_demo_local",
+        "grant_id": null
+      },
+      "occurred_at": "2026-11-25T04:00:00Z",
+      "recorded_at": "2026-11-25T04:00:00Z",
+      "valid_time": {
+        "from": "2026-11-25T04:00:00Z",
+        "to": null
+      },
+      "observation_kind": "observed",
+      "source_instance_id": "src_demo",
+      "source_event_id": "demo-event-1",
+      "source_sequence": 1,
+      "correlation_id": "cor_demo",
+      "correlation_quality": "exact",
+      "causation_event_ids": [],
+      "idempotency_key": "demo-init-1",
+      "source_locator": {
+        "kind": "user_action",
+        "precision": "exact",
+        "correlation_method": "direct_id",
+        "content_sha256": null,
+        "captured_at": "2026-11-25T04:00:00Z",
+        "description": "虚构示例中的明确用户操作",
+        "action_id": "act_demo",
+        "ui_surface": "decision-card",
+        "request_id": "req-demo-1"
+      },
+      "payload_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "payload": {
+        "subject_id": "prj_demo",
+        "subject_kind": "Project",
+        "subject_revision": 1,
+        "summary": "导出用于验证schema的虚构项目快照。",
+        "command": null,
+        "related_entity_ids": [],
+        "before_revision_refs": [],
+        "after_entities": [
+          {
+            "id": "prj_demo",
+            "revision": 1,
+            "project_id": "prj_demo",
+            "created_at": "2026-11-25T04:00:00Z",
+            "updated_at": "2026-11-25T04:00:00Z",
+            "valid_time": {
+              "from": "2026-11-25T04:00:00Z",
+              "to": null
+            },
+            "provenance": {
+              "observation_kind": "observed",
+              "source_refs": [
+                {
+                  "kind": "user_action",
+                  "precision": "exact",
+                  "correlation_method": "direct_id",
+                  "content_sha256": null,
+                  "captured_at": "2026-11-25T04:00:00Z",
+                  "description": "虚构示例中的明确用户操作",
+                  "action_id": "act_demo",
+                  "ui_surface": "decision-card",
+                  "request_id": "req-demo-1"
+                }
+              ],
+              "created_by": {
+                "principal_id": "usr_demo",
+                "kind": "human",
+                "authentication_ref": "auth_demo_local",
+                "grant_id": null
+              },
+              "derivation_note": "虚构验收资料，不代表任何真实项目的进展。"
+            },
+            "name": "移动群智感知方法研究 虚构示例",
+            "goal": "评估预测可靠性信息是否能改善有限预算下的采集任务分配。",
+            "problem_statement": "仅用位置预测的单一概率可能无法反映不同车辆的可靠程度，需要比较校准前后的任务分配表现。",
+            "in_scope": [
+              "预测校准",
+              "分配机制验证"
+            ],
+            "out_of_scope": [
+              "通信协议设计"
+            ],
+            "constraints": [
+              {
+                "id": "cst_budget",
+                "text": "方法复杂性增加必须先说明对核心研究问题的贡献。",
+                "source_ref": {
+                  "kind": "user_action",
+                  "precision": "exact",
+                  "correlation_method": "direct_id",
+                  "content_sha256": null,
+                  "captured_at": "2026-11-25T04:00:00Z",
+                  "description": "虚构示例中的明确用户操作",
+                  "action_id": "act_demo",
+                  "ui_surface": "decision-card",
+                  "request_id": "req-demo-1"
+                }
+              }
+            ],
+            "main_branch_id": "brn_main",
+            "focus_unit_id": "unt_allocation",
+            "status": "active",
+            "language": "zh-CN",
+            "timezone": "Australia/Melbourne"
+          }
+        ],
+        "raw_source_artifact_version_id": null
+      }
+    }
+  ],
+  "event_history_scope": "excerpt"
+}

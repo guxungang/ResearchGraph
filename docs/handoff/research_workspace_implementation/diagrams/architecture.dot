@@ -1,0 +1,23 @@
+digraph Architecture {
+  graph [bgcolor="white", fontname="Noto Sans CJK SC", fontsize=16, rankdir=TB, pad=0.25, nodesep=0.45, ranksep=0.65, splines=polyline, outputorder=edgesfirst, dpi=200, labelloc=b, label="模型提案经过应用服务校验后，才进入项目状态"];
+  node [shape=box, style="rounded,filled", fillcolor="#F7F9FC", color="#7A8899", fontcolor="#172B42", fontname="Noto Sans CJK SC", fontsize=18, penwidth=1.4, margin="0.16,0.15"];
+  edge [color="#77869A", arrowsize=0.7, penwidth=1.5, fontname="Noto Sans CJK SC", fontsize=14, fontcolor="#44546A"];
+  ui [label="用户界面\n线性简报＋探索图谱", fillcolor="#EAF0F8", color="#3D648E"];
+  harness [label="外部 Harness\nCodex／Claude Code"];
+  adapter [label="适配器\n观测与受控操作"];
+  service [label="本地应用服务\n版本 · 权限 · 事件", fillcolor="#EAF0F8", color="#3D648E", penwidth=1.8];
+  worker [label="独立模型 Worker\n只输出候选提案", fillcolor="#FFF8EC", color="#B68A41"];
+  events [label="SQLite\n唯一事件真源", fillcolor="#EDF6F2", color="#47856F"];
+  artifacts [label="不可变产物\n文件版本与证据", fillcolor="#EDF6F2", color="#47856F"];
+  {rank=same; harness; ui;}
+  {rank=same; adapter; service; worker;}
+  {rank=same; events; artifacts;}
+  harness -> adapter [dir=both, label="观测／管理"];
+  ui -> service [dir=both, label="用户操作／状态视图"];
+  adapter -> service [dir=both, label=<<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="2" BGCOLOR="white"><TR><TD>事件／授权操作</TD></TR></TABLE>>];
+  worker -> service [label="提案", color="#B68A41", fontcolor="#8B652D"];
+  service -> events [dir=both, label="提交／读取"];
+  service -> artifacts [dir=both, label="保存／引用"];
+  harness -> ui [style=invis, weight=10];
+  events -> artifacts [style=invis, weight=5];
+}

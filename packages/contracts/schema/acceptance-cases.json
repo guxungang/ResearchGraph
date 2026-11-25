@@ -1,0 +1,1040 @@
+{
+  "contract_version": "1.0.0",
+  "description": "这些是待实现系统的验收合同，不表示测试已经运行。HTTP二选一情况在then注明；expected_http_status为推荐主分支。",
+  "fixture": "example-project.json",
+  "cases": [
+    {
+      "id": "AC-001",
+      "category": "权限",
+      "title": "模型不能批准自己的方案",
+      "given": [
+        "已存在agent凭证与candidate提案。"
+      ],
+      "when": [
+        "agent调用applyProposal。"
+      ],
+      "then": [
+        "返回403。",
+        "Proposal不变，Decision不变，没有accepted业务事件。"
+      ],
+      "expected_http_status": 403,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-002",
+      "category": "权限",
+      "title": "伪造actor被拒绝",
+      "given": [
+        "请求schema不包含actor。"
+      ],
+      "when": [
+        "在提交提案请求中加入actor.kind=human。"
+      ],
+      "then": [
+        "返回400/validation_failed；不得忽略后继续采用。",
+        "服务器身份仍为原agent。"
+      ],
+      "expected_http_status": 400,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-003",
+      "category": "权限",
+      "title": "主线变更必须具有正确授权",
+      "given": [
+        "grt_demo未包含branch.promote。"
+      ],
+      "when": [
+        "人类调用applyProposal将新分支设为主线，引用grt_demo。"
+      ],
+      "then": [
+        "返回403。",
+        "Project.main_branch_id与当前路线保持不变。"
+      ],
+      "expected_http_status": 403,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-004",
+      "category": "权限",
+      "title": "明确已有授权无需重复弹窗",
+      "given": [
+        "用户已给出有效范围授权并发起范围内操作。"
+      ],
+      "when": [
+        "执行相同授权范围内的第二个常规节点更新。"
+      ],
+      "then": [
+        "复用已有Grant。",
+        "不额外要求用户批准同一范围。",
+        "仍记录本次操作的来源和版本。"
+      ],
+      "expected_http_status": 200,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-005",
+      "category": "权限",
+      "title": "模型转述不构成授权",
+      "given": [
+        "assistant消息包含用户已经批准。"
+      ],
+      "when": [
+        "提炼器识别一项Decision。"
+      ],
+      "then": [
+        "只生成候选Proposal。",
+        "不能创建human Grant或accepted Decision。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-006",
+      "category": "并发",
+      "title": "项目版本冲突无部分提交",
+      "given": [
+        "当前Project.revision=8；请求expected_revision=7。"
+      ],
+      "when": [
+        "提交任何业务mutation。"
+      ],
+      "then": [
+        "返回409及current_revision=8。",
+        "不创建部分实体，不推进事件序号。"
+      ],
+      "expected_http_status": 409,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-007",
+      "category": "并发",
+      "title": "提案目标版本过期",
+      "given": [
+        "Project版本匹配；提案修改后target revision变为3。"
+      ],
+      "when": [
+        "以expected_target_revision=2采用提案。"
+      ],
+      "then": [
+        "返回409。",
+        "旧批准不自动覆盖修改后的方案。"
+      ],
+      "expected_http_status": 409,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-008",
+      "category": "并发",
+      "title": "同一幂等请求只执行一次",
+      "given": [
+        "第一次请求已经完成但客户端未收到响应。"
+      ],
+      "when": [
+        "同principal、project、operation和Idempotency-Key重发同内容。"
+      ],
+      "then": [
+        "返回原CommandReceipt与实体ID。",
+        "不新增第二份事件或副作用。"
+      ],
+      "expected_http_status": 200,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-009",
+      "category": "并发",
+      "title": "同键不同内容拒绝",
+      "given": [
+        "已有幂等记录。"
+      ],
+      "when": [
+        "同键发送内容不同的请求。"
+      ],
+      "then": [
+        "返回409/idempotency_conflict。",
+        "原记录不被覆盖。"
+      ],
+      "expected_http_status": 409,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-010",
+      "category": "并发",
+      "title": "旧解释不能覆盖新知识",
+      "given": [
+        "解释任务绑定Project revision 10。",
+        "用户在revision 11改变关键假设。"
+      ],
+      "when": [
+        "revision 10的解释任务较晚返回。"
+      ],
+      "then": [
+        "保留版本归属并标为过时派生物。",
+        "不得覆盖revision 11的当前解释或决定。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-011",
+      "category": "溯源",
+      "title": "原始观测与推断分开",
+      "given": [
+        "导入tool成功输出及模型对意义的分析。"
+      ],
+      "when": [
+        "归档并生成节点总结。"
+      ],
+      "then": [
+        "工具输出标observed；意义判断标inferred。",
+        "两者都保留原始定位，不将推断改为直接证据。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-012",
+      "category": "溯源",
+      "title": "启发关联不伪装精确归属",
+      "given": [
+        "只有接近时间而没有tool call ID。"
+      ],
+      "when": [
+        "将一个文件变化关联到一次会话。"
+      ],
+      "then": [
+        "precision=correlated并说明time_window。",
+        "UI显示关联待核，不宣称该文件确定由此操作生成。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-013",
+      "category": "溯源",
+      "title": "乱序事件保持来源顺序",
+      "given": [
+        "result事件先于start被接收。"
+      ],
+      "when": [
+        "随后收到同来源的start。"
+      ],
+      "then": [
+        "保持recorded_at、occurred_at与source_sequence。",
+        "不伪造未观测的开始时间；关联补齐后可正确显示。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-014",
+      "category": "溯源",
+      "title": "重复ID不同内容进入冲突",
+      "given": [
+        "同source_event_id已经记录hash A。"
+      ],
+      "when": [
+        "收到该ID但hash B的事件。"
+      ],
+      "then": [
+        "拒绝静默覆盖，记录冲突。",
+        "当前已确认事实不被替换。"
+      ],
+      "expected_http_status": 409,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-015",
+      "category": "会话",
+      "title": "点击节点不改变执行绑定",
+      "given": [
+        "session运行于unt_allocation。"
+      ],
+      "when": [
+        "用户在地图选择unt_complex。"
+      ],
+      "then": [
+        "只改变界面选中状态。",
+        "SessionBinding和后续事件仍归unt_allocation。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-016",
+      "category": "会话",
+      "title": "中断请求与实际停止分开",
+      "given": [
+        "托管会话运行中且支持interrupt。"
+      ],
+      "when": [
+        "用户请求中断。"
+      ],
+      "then": [
+        "接口返回202，state=interrupt_requested。",
+        "仅在真实终态回执后变为interrupted。",
+        "子任务与远端作业单独核验。"
+      ],
+      "expected_http_status": 202,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-017",
+      "category": "会话",
+      "title": "不可控制的伴随会话明确拒绝",
+      "given": [
+        "连接interruptTurn=unsupported。"
+      ],
+      "when": [
+        "点击停止。"
+      ],
+      "then": [
+        "返回501/capability_unsupported。",
+        "UI指向原客户端并保持实际状态，不显示停止成功。"
+      ],
+      "expected_http_status": 501,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-018",
+      "category": "会话",
+      "title": "中断迟于完成不重写事实",
+      "given": [
+        "任务真实完成先于中断到达。"
+      ],
+      "when": [
+        "处理迟到的中断响应。"
+      ],
+      "then": [
+        "state保持completed。",
+        "提示中断未影响已完成结果，已有副作用不被假装撤销。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-019",
+      "category": "会话",
+      "title": "旧turn迟到事件归旧节点",
+      "given": [
+        "从旧节点中断后为新节点创建新绑定。"
+      ],
+      "when": [
+        "旧turn的一条工具完成事件迟到。"
+      ],
+      "then": [
+        "事件按原turn绑定归旧节点。",
+        "新节点成果不被污染。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-020",
+      "category": "状态",
+      "title": "任务成功不等于假设成立",
+      "given": [
+        "run_state=succeeded且exit_code=0。"
+      ],
+      "when": [
+        "刷新工作台。"
+      ],
+      "then": [
+        "Claim.assessment不自动变supported。",
+        "人工review和理解状态保持独立。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-021",
+      "category": "状态",
+      "title": "版本变化使旧审阅失效",
+      "given": [
+        "ReviewRecord对entity revision 1为accepted。"
+      ],
+      "when": [
+        "实体修订为revision 2。"
+      ],
+      "then": [
+        "旧记录保留原status。",
+        "is_current=false；界面显示新版本尚未审阅。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-022",
+      "category": "状态",
+      "title": "阅读不等于理解",
+      "given": [
+        "用户打开ReadingBrief。"
+      ],
+      "when": [
+        "记录页面浏览事件。"
+      ],
+      "then": [
+        "不自动设置self_reported_understood。",
+        "不自动批准任何Decision。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-023",
+      "category": "图谱",
+      "title": "禁止探索谱系成环",
+      "given": [
+        "A continues_to B已存在；请求版本均匹配。"
+      ],
+      "when": [
+        "尝试加入B continues_to A。"
+      ],
+      "then": [
+        "返回422/invalid_graph。",
+        "全部关系命令回滚。"
+      ],
+      "expected_http_status": 422,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-024",
+      "category": "图谱",
+      "title": "证据边具有类型约束",
+      "given": [
+        "source为ResearchUnit而非Evidence。"
+      ],
+      "when": [
+        "尝试建立supports指向Claim。"
+      ],
+      "then": [
+        "拒绝无效类型；提示先创建可定位Evidence。"
+      ],
+      "expected_http_status": 422,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-025",
+      "category": "回退",
+      "title": "从历史节点继续保留当前工作",
+      "given": [
+        "当前路线有未提交变更及后来发现的反证。"
+      ],
+      "when": [
+        "fork历史检查点。"
+      ],
+      "then": [
+        "创建新Branch和可选独立worktree。",
+        "原工作区不变；后续反证保留并加入当前有效上下文。"
+      ],
+      "expected_http_status": 201,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-026",
+      "category": "回退",
+      "title": "外部文件缺失不宣称完整恢复",
+      "given": [
+        "快照中数据对象不可访问。"
+      ],
+      "when": [
+        "读取或使用快照。"
+      ],
+      "then": [
+        "restore_readiness=partial或knowledge_only。",
+        "明确缺失对象；不覆盖当前工作区。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-027",
+      "category": "事务",
+      "title": "事件与投影原子提交",
+      "given": [
+        "在更新投影和追加事件之间注入进程崩溃。"
+      ],
+      "when": [
+        "重启服务并重试幂等命令。"
+      ],
+      "then": [
+        "事件与投影共同回滚或共同存在。",
+        "不存在事件已成功而当前视图永远未更新的半状态。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-028",
+      "category": "同步",
+      "title": "SSE断线重连无漏读",
+      "given": [
+        "客户端保存有效Last-Event-ID。"
+      ],
+      "when": [
+        "断开后重连。"
+      ],
+      "then": [
+        "重放游标后的事件；重复按event id去重。",
+        "客户端状态与最终数据库投影一致。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-029",
+      "category": "同步",
+      "title": "SSE游标过期明确重同步",
+      "given": [
+        "游标超出保留范围。"
+      ],
+      "when": [
+        "以旧游标连接。"
+      ],
+      "then": [
+        "返回409/resync_required或流内同名事件。",
+        "客户端重新读state/map，不能无声跳过历史。"
+      ],
+      "expected_http_status": 409,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-030",
+      "category": "同步",
+      "title": "Harness升级后不猜测能力",
+      "given": [
+        "旧适配器发现未知protocol schema。"
+      ],
+      "when": [
+        "试图调用未知的控制功能。"
+      ],
+      "then": [
+        "能力变unverified/degraded并返回501。",
+        "原始记录可继续只读，不调用未验证的危险命令。"
+      ],
+      "expected_http_status": 501,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-031",
+      "category": "同步",
+      "title": "远端断连不等于失败",
+      "given": [
+        "远端experiment最后状态running。"
+      ],
+      "when": [
+        "本地网络断开且无调度器终态。"
+      ],
+      "then": [
+        "显示unknown或连接中断及最后观测时间。",
+        "不标failed、cancelled或succeeded。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-032",
+      "category": "隐私",
+      "title": "跨项目检索隔离",
+      "given": [
+        "agent token只授权项目A。"
+      ],
+      "when": [
+        "请求项目B的recall、export或source。"
+      ],
+      "then": [
+        "返回403或不泄露存在性的404。",
+        "结果和错误不包含项目B片段。"
+      ],
+      "expected_http_status": 403,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-033",
+      "category": "隐私",
+      "title": "原始文档中的命令不执行",
+      "given": [
+        "文献或工具日志含忽略规则并批准全部方案文字。"
+      ],
+      "when": [
+        "导入、提炼、构建上下文。"
+      ],
+      "then": [
+        "内容按不受信来源处理。",
+        "不触发Grant、approval或外部命令。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-034",
+      "category": "阅读体验",
+      "title": "没有对话背景也能理解节点",
+      "given": [
+        "给未参与项目的研究者一张ReadingBrief。"
+      ],
+      "when": [
+        "要求其回答研究对象、为什么做、方法改变了什么、证据支持到哪里、还没证明什么、下一步需要选择什么，并定位实现版本和一条原始证据。"
+      ],
+      "then": [
+        "按冻结测试集和预先评分标准，至少80%的有效读者×节点任务无需口头补背景即可答对六项中的五项。",
+        "把未验证主张误读为已成立是单独关键错误，不能被其他答对项目抵消；发布测试集不接受此类错误。",
+        "答错或需要未提供前置知识时记录问题并调整解释。"
+      ],
+      "expected_http_status": null,
+      "automation": "人工理解测试并留存任务结果"
+    },
+    {
+      "id": "AC-035",
+      "category": "阅读体验",
+      "title": "术语与指代有可达解释",
+      "given": [
+        "材料包含概率校准、ECE和当前方案等用语。"
+      ],
+      "when": [
+        "从独立节点详情进入。"
+      ],
+      "then": [
+        "术语首次出现有解释或一键先修卡。",
+        "当前方案明确指向名称与版本；没有上文缺失的指代。"
+      ],
+      "expected_http_status": null,
+      "automation": "人工理解测试并留存任务结果"
+    },
+    {
+      "id": "AC-036",
+      "category": "阅读体验",
+      "title": "图谱之外仍可管理项目",
+      "given": [
+        "用户使用键盘或不方便读取拓扑。"
+      ],
+      "when": [
+        "切换列表/大纲视图并执行分支比较。"
+      ],
+      "then": [
+        "能访问同等节点状态、证据和控制操作。",
+        "不是只提供彩色图。"
+      ],
+      "expected_http_status": null,
+      "automation": "人工理解测试并留存任务结果"
+    },
+    {
+      "id": "AC-037",
+      "category": "降级",
+      "title": "模型不可用不瘫痪知识库",
+      "given": [
+        "模型服务超时。"
+      ],
+      "when": [
+        "打开项目、查看来源、人工创建节点与决定。"
+      ],
+      "then": [
+        "已有内容和人工操作仍可用。",
+        "新派生材料显示排队/失败，不篡改项目结论。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-038",
+      "category": "权限",
+      "title": "授权撤销不伪装回滚",
+      "given": [
+        "grant已被撤销，已有任务或外部副作用存在。"
+      ],
+      "when": [
+        "请求新的范围内操作。"
+      ],
+      "then": [
+        "新操作被拒绝。",
+        "已经发生的副作用保留事实；需要停止另发中断并等回执。"
+      ],
+      "expected_http_status": 403,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-039",
+      "category": "图谱",
+      "title": "分支融合不隐式选择矛盾决定",
+      "given": [
+        "两个分支的有效决定相互冲突。"
+      ],
+      "when": [
+        "生成融合候选。"
+      ],
+      "then": [
+        "保留两个决定和证据，提出需解决的冲突。",
+        "未经用户明确选择不自动建立有效主线。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-040",
+      "category": "时间",
+      "title": "历史重建与当前有效知识区分",
+      "given": [
+        "旧快照形成后出现反证并替换决定。"
+      ],
+      "when": [
+        "分别查询historical_reconstruction与current_valid。"
+      ],
+      "then": [
+        "历史视图标明截至时间；当前视图包含后续反证和替代关系。",
+        "继续工作默认current_valid，不复活已撤回主张。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-041",
+      "category": "权限",
+      "title": "内部策略复用授权而模型仍不能apply",
+      "given": [
+        "存在有效policy_within_scope Grant，授权确定性服务更新指定单元。"
+      ],
+      "when": [
+        "模型提交范围内候选，内部服务检查并应用。"
+      ],
+      "then": [
+        "无需重复点击。",
+        "Event.actor为service并引用Grant。",
+        "模型直接调用HTTP apply仍403；授权范围外候选不应用。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-042",
+      "category": "并发",
+      "title": "日志与解释不使按钮版本失效",
+      "given": [
+        "Project.revision=9，用户准备采用提案。"
+      ],
+      "when": [
+        "采集100条工具日志并生成brief/context。"
+      ],
+      "then": [
+        "event_seq推进，各实体可生成新修订。",
+        "Project.revision仍为9；用户请求不因此无故409。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-043",
+      "category": "并发",
+      "title": "提交提案不制造自身版本冲突",
+      "given": [
+        "基于Project.revision=9提交候选。"
+      ],
+      "when": [
+        "立即以expected_revision=9采用未变化提案。"
+      ],
+      "then": [
+        "不因提交动作自身推进项目语义版本而失败。",
+        "有效业务应用后Project.revision才递增。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-044",
+      "category": "溯源",
+      "title": "缺少实验配置时记录真实缺口",
+      "given": [
+        "只找到实验结果，没有配置和环境文件。"
+      ],
+      "when": [
+        "导入ExperimentRun。"
+      ],
+      "then": [
+        "config_artifact_version_id和environment_artifact_version_id为null。",
+        "capture_completeness=partial且missing_fields明确缺项；不生成虚构artifact ID。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-045",
+      "category": "状态",
+      "title": "会话结束不能自动完成工作单元",
+      "given": [
+        "工作单元仍有必须完成的验收条件。"
+      ],
+      "when": [
+        "Harness turn或session正常结束。"
+      ],
+      "then": [
+        "会话可completed；单元仍active或paused。",
+        "变为finished必须另有条件满足记录或明确closed_with_limitations理由。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-046",
+      "category": "时间",
+      "title": "旧材料导入不改写当时的已知历史",
+      "given": [
+        "今天导入两个月前的聊天。"
+      ],
+      "when": [
+        "请求当时的历史项目视图。"
+      ],
+      "then": [
+        "默认recorded_at重放不假装当时系统已经有该资料。",
+        "按source_occurred_at重建时history_label=reconstructed_history，并声明无法确认当时完整认知。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-047",
+      "category": "事务",
+      "title": "完整事件可重建当前投影",
+      "given": [
+        "提供event_history_scope=complete的生产导出。"
+      ],
+      "when": [
+        "清空可重建投影，按event_seq应用after_entities。"
+      ],
+      "then": [
+        "得到同等实体修订和关联。",
+        "摘要、外部JSONL和未验证模型文字不参与权威重建。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-048",
+      "category": "权限",
+      "title": "明确自然语言选择不重复询问",
+      "given": [
+        "活跃连接中的真实user明确接受唯一可识别提案的具体版本。"
+      ],
+      "when": [
+        "认证入口将该输入转换为精确授权并交内部policy。"
+      ],
+      "then": [
+        "保留原始user消息来源。",
+        "无需再要求用户点击一次相同批准。",
+        "身份、指代或版本不明确时不擅自应用。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-049",
+      "category": "同步",
+      "title": "采集旧版本事件不丢失事实",
+      "given": [
+        "观测发生于Project.revision=9，当前已是10。"
+      ],
+      "when": [
+        "适配器提交source event并携带采集版本9。"
+      ],
+      "then": [
+        "保存观测及其旧关联，不因语义版本过旧而丢失日志。",
+        "不据此覆盖revision10的决定或目标。"
+      ],
+      "expected_http_status": 202,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-050",
+      "category": "溯源",
+      "title": "旧证据关系不自动证明新主张",
+      "given": [
+        "Evidence revision 1支持Claim revision 1。"
+      ],
+      "when": [
+        "Claim文本修订为revision 2。"
+      ],
+      "then": [
+        "原边仍指向target_revision=1。",
+        "新版本展示needs_revalidation而非自动supported。",
+        "谱系continues_to边仍保留历史关系，不因标题更新消失。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-051",
+      "category": "权限",
+      "title": "授权到期不追溯篡改已接受决定",
+      "given": [
+        "Decision在有效Grant revision 1下于昨天被接受。"
+      ],
+      "when": [
+        "Grant今天过期或撤销。"
+      ],
+      "then": [
+        "禁止后续新动作。",
+        "历史Decision.accepted与accepted_at/authorization_grant_revision保留；是否改决定需另有明确变更。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-052",
+      "category": "同步",
+      "title": "异步请求可在断流后查询",
+      "given": [
+        "brief生成请求已返回202和command_id。"
+      ],
+      "when": [
+        "SSE连接断开，客户端查询commands/{command_id}。"
+      ],
+      "then": [
+        "返回排队、运行、完成、失败或未知的真实状态。",
+        "完成时给出可读取的结果实体ID；不靠不存在的页面假装成功。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-053",
+      "category": "资料",
+      "title": "人工创建主张与证据形成闭环",
+      "given": [
+        "用户选择并上传PDF，已有适当Grant。"
+      ],
+      "when": [
+        "注册ArtifactVersion；提出create_evidence和create_claim；授权应用后attach_evidence。"
+      ],
+      "then": [
+        "独立实体存在且来源页码/hash可追溯。",
+        "Claim初始unassessed，关系明确引用具体修订。",
+        "不存在仅能导入夹具却不能创建真实对象的接口空缺。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-054",
+      "category": "图谱",
+      "title": "拆分节点保留原始记录",
+      "given": [
+        "两个主题被误聚合为单个单元，且无运行绑定。"
+      ],
+      "when": [
+        "提交并采用split_research_unit。"
+      ],
+      "then": [
+        "旧节点归档但可打开；两个新节点有明确资料分配。",
+        "生成reorganizes_to，不把整理算成新科研成果。",
+        "原始消息不删除。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-055",
+      "category": "图谱",
+      "title": "活跃节点拆并禁止偷换执行身份",
+      "given": [
+        "某源单元有running或interrupt_requested绑定。"
+      ],
+      "when": [
+        "请求拆分或合并该单元。"
+      ],
+      "then": [
+        "返回409并指出活跃绑定。",
+        "可先停止或等待结束，不能把后续事件归到任意新节点。"
+      ],
+      "expected_http_status": 409,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-056",
+      "category": "图谱",
+      "title": "选择性融合不自动提升主线",
+      "given": [
+        "两条路线含不同证据和相互冲突决定。"
+      ],
+      "when": [
+        "merge_branches_selectively只选定一部分实体修订。"
+      ],
+      "then": [
+        "新分支为proposed，原主线不变。",
+        "未选成果不被暗中导入；冲突保持显式待解决或遵从具体resolution。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-057",
+      "category": "资料",
+      "title": "注册内容按实际字节核验",
+      "given": [
+        "客户端声称某文件hash为A，实际为B；请求版本均匹配。"
+      ],
+      "when": [
+        "registerArtifact提交expected_sha256=A。"
+      ],
+      "then": [
+        "返回422/validation_failed并报告hash不匹配。",
+        "不保存虚假可验证成果。"
+      ],
+      "expected_http_status": 422,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-058",
+      "category": "资料",
+      "title": "路径与上传不越权",
+      "given": [
+        "用户只授权项目目录A。"
+      ],
+      "when": [
+        "试图注册目录B文件或带路径穿越的上传名。"
+      ],
+      "then": [
+        "拒绝或归一为安全内容存储名，绝不读取未授权路径。",
+        "文件内容不作为脚本运行。"
+      ],
+      "expected_http_status": 403,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-059",
+      "category": "资料",
+      "title": "无法读取外部产物时不编造内容hash",
+      "given": [
+        "有外部资料URL但无法取得字节。"
+      ],
+      "when": [
+        "注册引用。"
+      ],
+      "then": [
+        "sha256/byte_size可为null，version_pinning=metadata_only或unknown，availability=external_unchecked。",
+        "Checkpoint不能宣称此对象已可完整恢复。"
+      ],
+      "expected_http_status": null,
+      "automation": "可自动化集成测试"
+    },
+    {
+      "id": "AC-060",
+      "category": "成本",
+      "title": "达到预算后保留资料和控制能力",
+      "given": [
+        "自动解释任务达到用户配置的预算。"
+      ],
+      "when": [
+        "请求新增模型分析。"
+      ],
+      "then": [
+        "返回429/budget_exceeded并保留待分析资料。",
+        "历史浏览、人工审阅和停止控制仍可用；不以后台无限重试绕过预算。"
+      ],
+      "expected_http_status": 429,
+      "automation": "可自动化集成测试"
+    }
+  ],
+  "release_gates": [
+    "所有权限、事务、并发、溯源和会话用例通过后，才能声明支持对应连接。",
+    "阅读体验用例需要未参与该项目的真实读者，不以另一模型评分代替全部人工验证。",
+    "真实Harness固定版本下的集成测试记录版本与覆盖范围，示例夹具通过不等于集成通过。"
+  ]
+}

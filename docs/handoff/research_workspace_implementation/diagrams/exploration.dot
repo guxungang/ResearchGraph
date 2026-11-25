@@ -1,0 +1,19 @@
+digraph Exploration {
+  graph [bgcolor="white", fontname="Noto Sans CJK SC", fontsize=17, rankdir=TB, pad=0.25, nodesep=0.42, ranksep=0.55, splines=polyline, outputorder=edgesfirst, dpi=200, labelloc=b, label="实线：探索派生    虚线：证据引用"];
+  node [shape=box, style="rounded,filled", fillcolor="#F7F9FC", color="#7A8899", fontcolor="#172B42", fontname="Noto Sans CJK SC", fontsize=19, penwidth=1.4, margin="0.18,0.13"];
+  edge [color="#77869A", arrowsize=0.75, penwidth=1.5, fontname="Noto Sans CJK SC", fontsize=15, fontcolor="#44546A"];
+  question [label="研究问题\n提高移动感知任务完成率", fillcolor="#EAF0F8", color="#3D648E", penwidth=1.7];
+  baseline [label="共同基线\n相同数据与评价条件"];
+  a [label="路线 A\n直接使用到达概率"];
+  b [label="路线 B\n校准到达概率"];
+  c [label="新分支 C\n简化评分策略", fillcolor="#EAF2FA", color="#376DA3", penwidth=1.8];
+  experiment [label="B 的实验\n校准改善／收益未确定", fillcolor="#FFF8EC", color="#B68A41"];
+  question -> baseline;
+  baseline -> a;
+  baseline -> b;
+  baseline -> c [color="#376DA3", penwidth=1.9];
+  b -> experiment;
+  experiment -> c [style=dashed, color="#B68A41", fontcolor="#8B652D", label="证据复用", constraint=false, penwidth=1.4];
+  {rank=same; a; b; c;}
+  a -> b -> c [style=invis, weight=10];
+}
