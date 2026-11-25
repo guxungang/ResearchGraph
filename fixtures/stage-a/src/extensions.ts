@@ -1,5 +1,15 @@
 // 阶段A样机扩展数据（非合同内容）。全部为虚构夹具。
-import type { StageAExtensions, UnitDetail } from './extension-types.ts';
+import type { RevisionRef, StageAExtensions, UnitDetail } from './extension-types.ts';
+import { branches, claims, decisions, evidenceList, researchUnits } from './entities.ts';
+
+/** 说明写作时依据的对象版本：取夹具中这些对象的当前修订。 */
+const BASIS_POOL = [...branches, ...researchUnits, ...claims, ...evidenceList, ...decisions] as unknown as { id: string; revision: number }[];
+const basis = (...ids: string[]): RevisionRef[] =>
+  ids.map((id) => {
+    const e = BASIS_POOL.find((x) => x.id === id);
+    if (!e) throw new Error(`说明依据的对象 ${id} 不存在`);
+    return { entity_id: id, revision: e.revision };
+  });
 
 const noImpl = { formulas: [], parameters: [], pseudocode: null, file_changes: [], mappings: [] };
 
@@ -169,7 +179,7 @@ const unitDetails: Record<string, UnitDetail> = {
     work_agreement: { question: '校准后概率是否更可靠', allowed_scope: ['运行评价脚本', '不得修改预测模型权重'], expected_outputs: ['校准前后ECE', '可靠性曲线', '按时段结果'], check_method: '5个种子、结果文件可复核', budget: null },
     example: '例如：校准前，“预测八到九成”的那一组实际只有六成多到达；校准后，同一组车辆的概率被调低到七成左右，实际到达比例也约为七成，两者对上了。',
     change_basis: [
-      { text: '第3版把结束依据从“完成条件已满足”改为“有限制地结束”，因为11月18日按时段检查发现晚高峰仍偏离。', refs: ['evd_peak', 'clm_calib_all_periods'] },
+      { text: '第3版把结束依据从“完成条件已满足”改为“有限制地结束”，因为11月18日按时段检查发现晚高峰校准后误差仍偏高，而且缺少校准前的值。', refs: ['evd_peak', 'clm_calib_all_periods'] },
       { text: '研究负责人11月2日的审阅针对第2版；第3版尚未审阅。', refs: ['rev_calib_exp'] },
     ],
     method_layer: {
@@ -286,7 +296,7 @@ const unitDetails: Record<string, UnitDetail> = {
       budget: null,
     },
     example: '例如：两辆车距离相近、时限都够，但甲的到达概率0.8、乙0.5。完整评分会因为可靠性项偏向甲；简化评分只看距离和时限，可能选中乙。路线C要看这种差别累积起来会不会影响完成率。',
-    change_basis: [{ text: '从快照 ckp_calib（11月2日）继续，并自动带上快照之后发现的晚高峰反证 evd_peak。', refs: ['ckp_calib', 'evd_peak'] }],
+    change_basis: [{ text: '从快照 ckp_calib（11月2日）继续，并自动带上快照之后发现的晚高峰限制 evd_peak。', refs: ['ckp_calib', 'evd_peak'] }],
     method_layer: {
       inputs: ['校准后的到达概率', '路线B对照实验的配置'],
       outputs: ['简化评分组的任务完成率'],
@@ -343,7 +353,28 @@ export const extensions: StageAExtensions = {
     cap_claude_import: 'Claude Code 档案导入的能力清单',
     src_codex_cli: 'Codex CLI（伴随模式）',
     src_claude_export: 'Claude Code（档案导入）',
+    // 实验运行在合同中没有标题字段，界面名称放在这里
+    run_baseline_1s: '原方法基线（单一种子）',
+    run_baseline: '原方法基线（5个种子）',
+    run_a_diag: '原始概率的可靠性诊断',
+    run_calib: '校准前后的概率误差',
+    run_calib_peak: '按时段的概率误差',
+    run_alloc_v1: '对照实验第一次运行',
+    run_alloc_v2: '对照实验第二次运行',
   },
+  short_names: {
+    brn_main: '路线B（主线）',
+    brn_a: '路线A',
+    brn_c: '路线C',
+    brn_net: '复杂网络（已关闭）',
+  },
+  evidence_limits: [
+    {
+      evidence_id: 'evd_peak',
+      claim_id: 'clm_calib_all_periods',
+      note: '晚高峰校准后ECE为0.113，高于全天；但没有校准前的值，不能判断校准在晚高峰是否有改善。它限制了结论的适用范围，不是反证。',
+    },
+  ],
   one_liners: {
     dec_start_c: '路线C要检验“简化评分”是否够用。现在开始，会和正在跑的对照实验抢同一块GPU。',
     pro_add_network: '模型建议加一个时空图神经网络来提高预测精度，但没有给出证据。',
@@ -367,19 +398,20 @@ export const extensions: StageAExtensions = {
     { topic: '方法层与实现层的结构化内容', spec_section: '§5.3', decision_record: 'docs/decisions/0002-prototype-extensions.md' },
     { topic: '路线比较的共同维度与指标可比性', spec_section: '§6.4', decision_record: 'docs/decisions/0002-prototype-extensions.md' },
     { topic: '连接状态的采集范围与最后同步时间', spec_section: '§6.1、§12.3', decision_record: 'docs/decisions/0002-prototype-extensions.md' },
+    { topic: '证据对主张的“限制适用范围”关系', spec_section: '§4.3', decision_record: 'docs/decisions/0007-route-adjustment-after-review.md' },
+    { topic: '新建路线时“需要独立工作区”的请求与落实状态', spec_section: '§4.4', decision_record: 'docs/decisions/0007-route-adjustment-after-review.md' },
   ],
   viewer: { principal_id: 'usr_owner', display_name: '研究负责人', last_visit_at: '2026-11-20T09:00:00Z', now: '2026-11-25T04:00:00Z' },
   home: {
     summary: {
       question: '车辆位置预测不准时，怎样让更多采集任务按时完成？',
-      mainline: '主线是路线B：先校准（修正）预测给出的到达概率，再交给原来的分配器。',
-      known: { text: '校准后，到达概率更准了', detail: '测试数据上概率误差从 0.142 降到 0.058。但晚高峰时段仍然不准（0.113）。', ref: 'evd_ece_test' },
-      unknown: { text: '概率更准，能不能让更多任务按时完成？', detail: '这是路线B成立的前提，目前还没有证据。论文草稿已经写了“显著提高”，需要先改掉。', ref: 'clm_completion' },
-      doing: { text: '对照实验：原始概率 vs 校准后概率', ref: 'unt_alloc_exp' },
+      mainline: { text: '主线是路线B：先校准（修正）预测给出的到达概率，再交给原来的分配器。', basis: basis('dec_route_b', 'brn_main') },
+      known: { text: '校准后，到达概率更准了', detail: '测试数据上概率误差从 0.142 降到 0.058。晚高峰校准后误差仍较高（0.113），是否有改善还不知道。', ref: 'evd_ece_test', basis: basis('evd_ece_test', 'evd_peak', 'clm_calib_test', 'clm_calib_all_periods') },
+      unknown: { text: '概率更准，能不能让更多任务按时完成？', detail: '这是路线B成立的前提，目前还没有证据。论文草稿已经写了“显著提高”，需要先改掉。', ref: 'clm_completion', basis: basis('clm_completion', 'clm_paper_s4') },
     },
     brief_paragraphs: [
       '本项目研究：车辆位置预测有误差时，怎样提高移动群智感知任务的完成率。平台把“到某个区域采集信息”的任务分给行驶中的车辆；分配器依据每辆车按时到达的概率选车，而这些概率来自有误差的预测。',
-      '当前主线是路线B：先用温度缩放修正到达概率，再交给原有分配器，分配器本身不改。已经知道的是：校准让测试数据上的概率更可靠（期望校准误差从0.142降到0.058），但晚高峰时段仍明显偏离。',
+      '当前主线是路线B：先用温度缩放修正到达概率，再交给原有分配器，分配器本身不改。已经知道的是：校准让测试数据上的概率更可靠（期望校准误差从0.142降到0.058），晚高峰时段校准后误差仍较高，但缺少校准前的值，还不知道校准在晚高峰是否有改善。',
     ],
     changes_since_last_visit: [
       { at: '2026-11-21T01:34:00Z', text: '对照实验第一次运行因找不到数据文件而中止。这是执行问题，不是反证；配置已修正。', short: '对照实验第一次运行失败：数据路径写错了（不是反证）', refs: ['run_alloc_v1'] },
@@ -425,6 +457,7 @@ export const extensions: StageAExtensions = {
       priority: 1,
       priority_reason: '影响当前主线的计算资源安排，且路线C在你选择之前无法开始。',
       target: '#/decisions?focus=dec_start_c',
+      open_while: { kind: 'decision_pending', decision_id: 'dec_start_c' },
     },
     {
       id: 'att_paper_gap',
@@ -439,6 +472,7 @@ export const extensions: StageAExtensions = {
       priority: 2,
       priority_reason: '证据严重程度高：论文陈述超出了已有证据。',
       target: '#/evidence?focus=clm_paper_s4',
+      open_while: { kind: 'claim_without_evidence', claim_id: 'clm_paper_s4' },
     },
     {
       id: 'att_drift_net',
@@ -453,20 +487,22 @@ export const extensions: StageAExtensions = {
       priority: 3,
       priority_reason: '影响主线目标：若采纳会把重心从对照实验转向模型开发。',
       target: '#/decisions?focus=pro_add_network',
+      open_while: { kind: 'proposal_open', proposal_id: 'pro_add_network' },
     },
     {
       id: 'att_review_calib',
       kind: 'review',
       title: '有一个新版本待审阅',
-      basis: '你11月2日审阅通过的是第2版；11月18日加入晚高峰反证后形成第3版。新修订不继承旧审阅。',
+      basis: '你11月2日审阅通过的是第2版；11月18日加入晚高峰的按时段结果后形成第3版。新修订不继承旧审阅。',
       refs: ['unt_calib_exp', 'rev_calib_exp'],
       affected: ['unt_calib_exp'],
-      short: '校准实验加入晚高峰反证后的第3版，还没审阅',
+      short: '校准实验加入晚高峰结果后的第3版，还没审阅',
       action_label: '去审阅',
       suggested_action: '打开单元的“历史与版本”查看两版差异。',
       priority: 4,
       priority_reason: '不阻塞当前工作。',
       target: '#/unit/unt_calib_exp?tab=history',
+      open_while: { kind: 'review_needed', target_id: 'unt_calib_exp' },
     },
     {
       id: 'att_raw_data',
@@ -481,6 +517,7 @@ export const extensions: StageAExtensions = {
       priority: 5,
       priority_reason: '只影响复现，不影响当前运行。',
       target: '#/evidence?tab=artifacts&focus=art_raw_trajectories',
+      open_while: { kind: 'artifact_not_local', artifact_version_id: 'art_raw_trajectories' },
     },
     {
       id: 'att_capability',
@@ -495,6 +532,7 @@ export const extensions: StageAExtensions = {
       priority: 6,
       priority_reason: '提示性信息。',
       target: '#/connections',
+      open_while: { kind: 'capability_missing', capability_id: 'cap_codex_cli', capability: 'interruptTurn' },
     },
   ],
   glossary: [
@@ -522,7 +560,7 @@ export const extensions: StageAExtensions = {
     brn_main: { status_note: '主线，正在进行任务分配对照实验。', resume_condition: null, reusable_findings: [] },
     brn_a: { status_note: '暂缓：作为对照保留。诊断发现高概率区间被高估，因此主线改走路线B。', resume_condition: '若路线B的对照实验没有改善任务完成率。', reusable_findings: ['原方法的基线结果（evd_baseline_completion）', '验证划分的可靠性曲线（evd_reliability_a）'] },
     brn_net: { status_note: '已关闭（决定 dec_no_network）。', resume_condition: '任务分配对照实验显示校准后的概率仍是任务失败的主要瓶颈。', reusable_findings: ['文献调研中整理的三类预测误差来源', '基线失败分解表（evd_failure_analysis）'] },
-    brn_c: { status_note: '待开始：等待决定 dec_start_c。从快照 ckp_calib 继续，已带上之后发现的晚高峰反证。', resume_condition: null, reusable_findings: [] },
+    brn_c: { status_note: '待开始：等待决定 dec_start_c。从快照 ckp_calib 继续，已带上之后发现的晚高峰限制。', resume_condition: null, reusable_findings: [] },
   },
   comparison: {
     question: '车辆位置预测有误差时，怎样提高任务完成率？',
@@ -539,6 +577,7 @@ export const extensions: StageAExtensions = {
     routes: [
       {
         branch_id: 'brn_a',
+        basis: basis('brn_a', 'evd_baseline_completion', 'evd_reliability_a', 'dec_route_b'),
         label: '路线A：直接使用概率',
         card: { aim: '直接用模型给的到达概率分配任务', evidence_for: '基线完成率 0.71', evidence_against: '高概率区间被高估：说九成，实际约六成', completion: '0.71', cost: '低', status: '暂缓，作为对照' },
         dims: {
@@ -554,13 +593,14 @@ export const extensions: StageAExtensions = {
       },
       {
         branch_id: 'brn_main',
+        basis: basis('brn_main', 'evd_ece_test', 'evd_peak', 'dec_route_b', 'clm_completion'),
         label: '路线B：先校准再分配（主线）',
-        card: { aim: '先校准概率，再交给同一个分配器', evidence_for: '校准后概率误差 0.142 → 0.058', evidence_against: '晚高峰仍不准（0.113）', completion: null, cost: '低', status: '主线，实验进行中' },
+        card: { aim: '先校准概率，再交给同一个分配器', evidence_for: '校准后概率误差 0.142 → 0.058', evidence_against: '晚高峰校准后误差仍偏高（0.113），缺少校准前的值', completion: null, cost: '低', status: '主线，实验进行中' },
         dims: {
           problem: { text: '修正概率的系统性偏高，再交给同一分配器。', refs: [] },
           assumptions: { text: '偏差可以用一个温度参数整体修正；概率更可靠会带来更多按时完成的任务（后者未检验）。', refs: ['clm_completion'] },
           support: { text: '测试划分ECE从0.142降到0.058（预测层）。', refs: ['evd_ece_test'] },
-          counter: { text: '晚高峰校准后ECE仍为0.113。', refs: ['evd_peak'] },
+          counter: { text: '没有直接反证。晚高峰校准后ECE为0.113，高于全天，但缺少校准前的值，只能限制结论范围。', refs: ['evd_peak'] },
           open: { text: '任务完成率是否提高：对照实验进行中。', refs: ['run_alloc_v2'] },
           cost: { text: '低：新增一个校准步骤；对照实验约4小时计算。', refs: [] },
           interpretability: { text: '较高：只增加一个参数T。', refs: [] },
@@ -569,6 +609,7 @@ export const extensions: StageAExtensions = {
       },
       {
         branch_id: 'brn_c',
+        basis: basis('brn_c', 'clm_weight_needed', 'dec_start_c'),
         label: '路线C：简化分配评分',
         card: { aim: '去掉评分里的可靠性项，看是否一样好', evidence_for: null, evidence_against: null, completion: null, cost: '中', status: '等你决定何时开始' },
         dims: {
@@ -584,6 +625,7 @@ export const extensions: StageAExtensions = {
       },
       {
         branch_id: 'brn_net',
+        basis: basis('brn_net', 'evd_failure_analysis', 'dec_no_network'),
         label: '备选：复杂预测网络（已关闭）',
         card: { aim: '换更复杂的网络，提高位置预测精度', evidence_for: null, evidence_against: '失败主要不是因为位置误差大', completion: null, cost: '高', status: '已关闭' },
         dims: {

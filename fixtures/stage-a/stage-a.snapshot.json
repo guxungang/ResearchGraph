@@ -784,10 +784,10 @@
         }
       ],
       "blocker": null,
-      "next_action": "无。晚高峰问题在对照实验中按时段单独报告。",
+      "next_action": "无。晚高峰问题在对照实验中按时段单独报告，并补算晚高峰校准前的ECE。",
       "completion": {
         "kind": "closed_with_limitations",
-        "basis": "测试划分上的ECE比较已完成（5个随机种子，evd_ece_test）。按时段检查发现晚高峰子集校准后仍明显偏离（evd_peak），原因未查明；该问题作为反证记入主张 clm_calib_all_periods，并在对照实验中按时段单独报告，本单元不再继续调查。",
+        "basis": "测试划分上的ECE比较已完成（5个随机种子，evd_ece_test）。按时段检查时只计算了校准后的ECE：晚高峰子集为0.113，高于全天的0.058（evd_peak）。因为缺少该时段校准前的值，不能判断校准在晚高峰是否有改善；主张 clm_calib_all_periods 因此改为证据不足。补算校准前的值和按时段报告放到对照实验中，本单元不再继续调查。",
         "evidence_ids": [
           "evd_ece_test",
           "evd_peak"
@@ -1503,56 +1503,12 @@
       "target_id": "clm_calib_all_periods",
       "relation": "supports",
       "branch_id": null,
-      "rationale": "建立于主张第2版（当时表述为全天改善成立）；主张已修订为第3版，本关系需要重新核验。",
+      "rationale": "建立于主张第2版：当时用全天汇总的改善来支持“所有时段都改善”，这一推断过宽。主张已修订为第3版，本关系需要重新核验。",
       "state": "active",
       "source_revision": 1,
       "target_revision": 2,
       "binding_semantics": "exact_revision",
       "currency": "needs_revalidation"
-    },
-    {
-      "id": "edg_c1",
-      "revision": 1,
-      "project_id": "prj_mcs",
-      "created_at": "2026-11-18T07:20:00Z",
-      "updated_at": "2026-11-18T07:20:00Z",
-      "valid_time": {
-        "from": "2026-11-18T07:20:00Z",
-        "to": null
-      },
-      "provenance": {
-        "observation_kind": "observed",
-        "source_refs": [
-          {
-            "kind": "user_action",
-            "precision": "exact",
-            "correlation_method": "direct_id",
-            "content_sha256": null,
-            "captured_at": "2026-11-18T07:20:00Z",
-            "description": "研究负责人的界面操作：建立或确认关系",
-            "action_id": "act_link_c1",
-            "ui_surface": "unit-detail",
-            "request_id": "req-act_link_c1"
-          }
-        ],
-        "created_by": {
-          "principal_id": "usr_owner",
-          "kind": "human",
-          "authentication_ref": "auth_local_session",
-          "grant_id": "grt_owner_core"
-        },
-        "derivation_note": "阶段A虚构夹具：不代表任何真实项目、实验结果或有效授权。"
-      },
-      "source_id": "evd_peak",
-      "target_id": "clm_calib_all_periods",
-      "relation": "contradicts",
-      "branch_id": null,
-      "rationale": "晚高峰子集校准后ECE仍为0.113，挑战“所有时段都改善”。",
-      "state": "active",
-      "source_revision": 1,
-      "target_revision": 3,
-      "binding_semantics": "exact_revision",
-      "currency": "current"
     },
     {
       "id": "edg_s4",
@@ -1767,7 +1723,7 @@
       "target_id": "evd_peak",
       "relation": "uses",
       "branch_id": "brn_main",
-      "rationale": "带入已知反证：晚高峰时段需单独报告。",
+      "rationale": "带入已知限制：晚高峰校准后误差仍偏高，需单独报告并补算校准前的值。",
       "state": "active",
       "source_revision": 2,
       "target_revision": 1,
@@ -1811,7 +1767,7 @@
       "target_id": "evd_peak",
       "relation": "uses",
       "branch_id": "brn_c",
-      "rationale": "从旧快照继续时带上快照之后发现的反证。",
+      "rationale": "从旧快照继续时带上快照之后发现的限制。",
       "state": "active",
       "source_revision": 1,
       "target_revision": 1,
@@ -2306,8 +2262,8 @@
       "supersedes_claim_id": null,
       "text": "温度缩放在一天中的所有时段都改善了到达概率的可靠性。",
       "claim_kind": "hypothesis",
-      "assessment": "mixed",
-      "conditions": "全天测试划分上改善成立（evd_ece_test）；晚高峰（17:00–19:00）子集校准后仍明显偏离（evd_peak），原因未查明。",
+      "assessment": "inconclusive",
+      "conditions": "全天汇总的改善（evd_ece_test）不能说明每个时段都改善。晚高峰（17:00–19:00）只有校准后的ECE 0.113（evd_peak），缺少校准前的值，无法判断该时段是否改善。需要按时段计算校准前后的ECE。",
       "evidence_ids": [
         "evd_ece_test",
         "evd_peak"
@@ -2784,15 +2740,15 @@
         },
         "derivation_note": "阶段A虚构夹具：不代表任何真实项目、实验结果或有效授权。"
       },
-      "title": "晚高峰时段校准后的ECE",
+      "title": "晚高峰时段校准后的ECE（没有校准前的值）",
       "evidence_kind": "experiment_result",
-      "statement": "晚高峰（17:00–19:00）子集上，校准后ECE为0.113，明显高于全天测试划分的0.058。",
+      "statement": "晚高峰（17:00–19:00）子集上，校准后ECE为0.113，高于全天测试划分校准后的0.058。这次只评估了校准后的模型，没有计算该时段校准前的ECE。",
       "artifact_version_ids": [
         "art_peak_results"
       ],
       "experiment_run_id": "run_calib_peak",
       "scope": "测试划分中17:00–19:00的配对，约占样本9%（n=2,310）；5个随机种子。",
-      "limitations": "子集样本较少；偏离原因（例如晚高峰拥堵模式与训练时段不同）尚未检验。",
+      "limitations": "缺少晚高峰校准前的ECE，不能判断校准在该时段是否有改善，只能说明校准后该时段误差仍较高。子集样本较少；偏高的原因（例如晚高峰拥堵模式与训练时段不同）尚未检验。",
       "availability": "available",
       "verification_status": "source_checked",
       "source_locator": {
@@ -3057,7 +3013,7 @@
       "authorization_grant_revision": 1,
       "accepted_at": "2026-10-08T06:30:00Z",
       "superseded_by_decision_id": null,
-      "reconsider_when": "若任务分配对照实验显示校准后完成率没有提高，或晚高峰偏离被证实影响分配结果。"
+      "reconsider_when": "若任务分配对照实验显示校准后完成率没有提高，或晚高峰误差偏高被证实影响分配结果。"
     },
     {
       "id": "dec_no_network",
@@ -3222,7 +3178,7 @@
       "authorization_grant_revision": 1,
       "accepted_at": "2026-10-21T03:00:00Z",
       "superseded_by_decision_id": null,
-      "reconsider_when": "若需要按时段分别校准（例如晚高峰偏离被证实影响分配结果）。"
+      "reconsider_when": "若需要按时段分别校准（例如晚高峰误差偏高被证实影响分配结果）。"
     },
     {
       "id": "dec_start_c",
@@ -6118,8 +6074,8 @@
         {
           "entity_id": "evd_peak",
           "revision": 1,
-          "role": "counterevidence",
-          "text": "晚高峰（17:00–19:00）校准后ECE仍为0.113，需在结果中单独报告。",
+          "role": "evidence",
+          "text": "晚高峰（17:00–19:00）校准后ECE为0.113，高于全天；没有校准前的值，不能判断校准在晚高峰是否有效。需在结果中单独报告。",
           "source_refs": [
             {
               "kind": "experiment",
@@ -6134,7 +6090,7 @@
               "record_path": "results/ece_by_period.json#/periods/evening_peak"
             }
           ],
-          "validity_note": "后来发现的反证，必须保留。"
+          "validity_note": "后来发现的限制，必须保留；不要写成“校准在晚高峰无效”。"
         },
         {
           "entity_id": "clm_completion",
@@ -7164,7 +7120,8 @@
       "project_background": "本项目研究移动群智感知中的任务分配：平台把“到某个区域采集信息”的任务分给正在行驶的车辆，车辆在时限内到达并完成采集，任务才算完成。平台只能根据有误差的位置预测，估计每辆车按时到达的可能性（称为“到达概率”），再据此分配任务。如果到达概率系统性偏高，分配器就会把任务交给实际到不了的车辆，任务因此失败。",
       "decision_request": null,
       "limitations": [
-        "晚高峰子集只占约9%的样本（n=2,310）。"
+        "晚高峰子集只占约9%的样本（n=2,310）。",
+        "按时段只计算了校准后的ECE。"
       ],
       "readability_checks": {
         "unexplained_terms": [],
@@ -7182,7 +7139,7 @@
         "generated_at": "2026-11-18T08:00:00Z",
         "processing_command_id": null
       },
-      "title": "校准改善了测试数据上的概率可靠性，但晚高峰仍偏离",
+      "title": "校准改善了测试数据上的概率可靠性，晚高峰是否改善还不知道",
       "why_this_work": "在比较任务完成率之前，需要先确认校准确实让到达概率更可靠。否则即使完成率有变化，也说不清原因。",
       "current_question": "温度缩放之后，到达概率与车辆实际按时到达的频率是否更一致？这种改善在不同时段是否都成立？",
       "prerequisites": [
@@ -7200,11 +7157,11 @@
       "method_explanation": "在测试划分上比较校准前后的ECE和可靠性曲线，用随机种子11–15重复5次（种子影响验证样本的抽取，从而影响拟合出的T）。11月18日又按时段把测试数据分组，单独计算每个时段校准后的ECE。",
       "key_findings": [
         "全天测试数据上，ECE从0.142降到0.058（5个种子均值，T约为1.84），见 evd_ece_test。这支持一个较窄的结论：校准改善了测试划分上的概率可靠性。",
-        "晚高峰（17:00–19:00）子集上，校准后ECE仍为0.113，明显高于全天的0.058（evd_peak）。因此“校准在所有时段都改善可靠性”目前证据混合。"
+        "晚高峰（17:00–19:00）子集上，校准后ECE为0.113，高于全天的0.058（evd_peak）。但这次没有计算晚高峰校准前的ECE，所以只能说“校准后晚高峰误差仍较高”，不能说“校准在晚高峰没有效果”；“校准在所有时段都改善可靠性”目前证据不足。"
       ],
       "not_yet_established": [
         "以上都是预测层指标。还没有在相同预算、数据和分配算法下比较最终任务完成率，因此不能认定校准改善了整个系统。",
-        "晚高峰偏离的原因没有查明，也不知道它是否会影响分配结果。"
+        "校准在晚高峰是否有改善（缺少校准前的值）；晚高峰误差偏高的原因，以及它是否会影响分配结果。"
       ],
       "implementation_changes": [
         {
@@ -7222,8 +7179,8 @@
           ]
         }
       ],
-      "project_impact": "路线B的前提基本成立（测试数据上概率更可靠），可以进入任务分配对照实验；同时留下晚高峰这一需要跟踪的问题。",
-      "recommended_next_step": "无需操作。晚高峰问题已记为主张 clm_calib_all_periods 的反证，对照实验会按时段单独报告。",
+      "project_impact": "路线B的前提基本成立（测试数据上概率更可靠），可以进入任务分配对照实验；同时留下晚高峰这一需要补算和跟踪的问题。",
+      "recommended_next_step": "无需操作。晚高峰问题已记入主张 clm_calib_all_periods（证据不足）；对照实验会按时段单独报告，并补算晚高峰校准前的ECE。",
       "evidence_links": [
         {
           "evidence_id": "evd_ece_test",
@@ -7244,8 +7201,8 @@
         },
         {
           "evidence_id": "evd_peak",
-          "label": "晚高峰校准后ECE：0.113",
-          "relationship": "contradicts",
+          "label": "晚高峰校准后ECE 0.113，没有校准前的值",
+          "relationship": "limitation",
           "source_locator": {
             "kind": "experiment",
             "precision": "exact",
@@ -7413,7 +7370,7 @@
         },
         {
           "evidence_id": "evd_peak",
-          "label": "已知限制：晚高峰校准仍偏离",
+          "label": "已知限制：晚高峰校准后误差仍偏高",
           "relationship": "limitation",
           "source_locator": {
             "kind": "experiment",
@@ -7535,8 +7492,8 @@
         },
         {
           "term": "从快照继续",
-          "plain_explanation": "从过去保存的项目状态（快照）开始一条新路线。系统会新建分支，并带上快照之后才发现的反证，不会覆盖当前的工作。",
-          "why_needed": "路线C从11月2日的快照 ckp_calib 继续，并带上了11月18日发现的晚高峰反证。"
+          "plain_explanation": "从过去保存的项目状态（快照）开始一条新路线。系统会新建分支，并带上快照之后才发现的反证和限制，不会覆盖当前的工作。",
+          "why_needed": "路线C从11月2日的快照 ckp_calib 继续，并带上了11月18日发现的晚高峰限制。"
         }
       ],
       "method_explanation": "计划在路线B对照实验的相同条件下增加第三组：使用校准后的概率，但评分只含距离与时限两项，然后比较三组的任务完成率。需要独立的代码工作区，避免与路线B正在运行的实验修改同一份评分代码。",
@@ -7570,7 +7527,7 @@
         },
         {
           "evidence_id": "evd_peak",
-          "label": "带入的反证：晚高峰校准仍偏离",
+          "label": "带入的限制：晚高峰校准后误差仍偏高",
           "relationship": "limitation",
           "source_locator": {
             "kind": "experiment",
@@ -8190,7 +8147,7 @@
         "ui_surface": "decision-card",
         "request_id": "req-act_dec_route_b"
       },
-      "payload_sha256": "75c18791fe658b6a207af9d63463415a6eab5f0daa0b7efd24e896e9a070ee14",
+      "payload_sha256": "6795c9a44d0bf928f35c979c761a19fc1d06e8343c8ade3cca7011c2ab4ca33d",
       "payload": {
         "subject_id": "dec_route_b",
         "subject_kind": "Decision",
@@ -8299,7 +8256,7 @@
             "authorization_grant_revision": 1,
             "accepted_at": "2026-10-08T06:30:00Z",
             "superseded_by_decision_id": null,
-            "reconsider_when": "若任务分配对照实验显示校准后完成率没有提高，或晚高峰偏离被证实影响分配结果。"
+            "reconsider_when": "若任务分配对照实验显示校准后完成率没有提高，或晚高峰误差偏高被证实影响分配结果。"
           }
         ],
         "raw_source_artifact_version_id": null
@@ -8459,7 +8416,7 @@
         "ui_surface": "unit-detail",
         "request_id": "req-act_finish_calib_1"
       },
-      "payload_sha256": "eea8b30d497f6580d49f340f8a3bee84fc51dfacf454121fc85f38e0afeb1299",
+      "payload_sha256": "97d55730cbc98e98a43f3059537f9961d08b013e3bde926997991b7a1f94e7a0",
       "payload": {
         "subject_id": "unt_calib_exp",
         "subject_kind": "ResearchUnit",
@@ -8555,7 +8512,7 @@
               }
             ],
             "blocker": null,
-            "next_action": "无。晚高峰问题在对照实验中按时段单独报告。",
+            "next_action": "无。进入任务分配对照实验。",
             "completion": {
               "kind": "criteria_satisfied",
               "basis": "测试划分上的ECE比较已完成（5个随机种子，evd_ece_test）。",
@@ -9058,7 +9015,7 @@
         "ui_surface": "evidence",
         "request_id": "req-act_register_peak"
       },
-      "payload_sha256": "0493cbbda6d2f08dfe9dbbf5e38b2785ba90a8ec6d45fb29cf451d86080915f6",
+      "payload_sha256": "a0843c7acb40b4bf131d5ad5372efecfd6de734ebc6fcf76c055db89bf6193c0",
       "payload": {
         "subject_id": "evd_peak",
         "subject_kind": "Evidence",
@@ -9105,15 +9062,15 @@
               },
               "derivation_note": "阶段A虚构夹具：不代表任何真实项目、实验结果或有效授权。"
             },
-            "title": "晚高峰时段校准后的ECE",
+            "title": "晚高峰时段校准后的ECE（没有校准前的值）",
             "evidence_kind": "experiment_result",
-            "statement": "晚高峰（17:00–19:00）子集上，校准后ECE为0.113，明显高于全天测试划分的0.058。",
+            "statement": "晚高峰（17:00–19:00）子集上，校准后ECE为0.113，高于全天测试划分校准后的0.058。这次只评估了校准后的模型，没有计算该时段校准前的ECE。",
             "artifact_version_ids": [
               "art_peak_results"
             ],
             "experiment_run_id": "run_calib_peak",
             "scope": "测试划分中17:00–19:00的配对，约占样本9%（n=2,310）；5个随机种子。",
-            "limitations": "子集样本较少；偏离原因（例如晚高峰拥堵模式与训练时段不同）尚未检验。",
+            "limitations": "缺少晚高峰校准前的ECE，不能判断校准在该时段是否有改善，只能说明校准后该时段误差仍较高。子集样本较少；偏高的原因（例如晚高峰拥堵模式与训练时段不同）尚未检验。",
             "availability": "available",
             "verification_status": "source_checked",
             "source_locator": {
@@ -9174,23 +9131,23 @@
         "ui_surface": "evidence",
         "request_id": "req-act_assess_all_periods_2"
       },
-      "payload_sha256": "96c0d7eaad6e1e1cc25c11b0346ff399c01cf246fc955306cfaf9ffc47e75f9b",
+      "payload_sha256": "843f402356b734cb3e18f224e98063a55dda7a96bb2eb8c99b94765a1169f289",
       "payload": {
         "subject_id": "clm_calib_all_periods",
         "subject_kind": "Claim",
         "subject_revision": 3,
-        "summary": "主张“所有时段都改善可靠性”改为证据混合：晚高峰子集仍偏离。",
+        "summary": "主张“所有时段都改善可靠性”改为证据不足：全天汇总不能说明各时段，晚高峰缺少校准前的对照。",
         "command": {
           "kind": "assess_claim",
           "claim_id": "clm_calib_all_periods",
-          "assessment": "mixed",
-          "conditions": "全天测试划分上改善成立（evd_ece_test）；晚高峰（17:00–19:00）子集校准后仍明显偏离（evd_peak），原因未查明。",
+          "assessment": "inconclusive",
+          "conditions": "全天汇总的改善（evd_ece_test）不能说明每个时段都改善。晚高峰（17:00–19:00）只有校准后的ECE 0.113（evd_peak），缺少校准前的值，无法判断该时段是否改善。需要按时段计算校准前后的ECE。",
           "evidence_ids": [
             "evd_ece_test",
             "evd_peak"
           ],
           "review_ids": [],
-          "reason": "晚高峰反证 evd_peak。"
+          "reason": "按时段检查后发现：全天汇总的改善不能说明各时段；晚高峰只有校准后的ECE（evd_peak），缺少校准前的值。"
         },
         "related_entity_ids": [],
         "before_revision_refs": [
@@ -9237,8 +9194,8 @@
             "supersedes_claim_id": null,
             "text": "温度缩放在一天中的所有时段都改善了到达概率的可靠性。",
             "claim_kind": "hypothesis",
-            "assessment": "mixed",
-            "conditions": "全天测试划分上改善成立（evd_ece_test）；晚高峰（17:00–19:00）子集校准后仍明显偏离（evd_peak），原因未查明。",
+            "assessment": "inconclusive",
+            "conditions": "全天汇总的改善（evd_ece_test）不能说明每个时段都改善。晚高峰（17:00–19:00）只有校准后的ECE 0.113（evd_peak），缺少校准前的值，无法判断该时段是否改善。需要按时段计算校准前后的ECE。",
             "evidence_ids": [
               "evd_ece_test",
               "evd_peak"
@@ -9293,12 +9250,12 @@
         "ui_surface": "unit-detail",
         "request_id": "req-act_reclose_calib"
       },
-      "payload_sha256": "3866124121ba4a3445a61d68e617dac1cffb03b49d0a3d637db0f33c30e8f5a5",
+      "payload_sha256": "03f9e046b12f86af6bbbca83d1191583ce35263d2e45e78df3a0e15413511f40",
       "payload": {
         "subject_id": "unt_calib_exp",
         "subject_kind": "ResearchUnit",
         "subject_revision": 3,
-        "summary": "校准实验单元重新给出结束依据：有限制地结束，并记录晚高峰问题。旧审阅（针对第2版）保留但不再是当前审阅。",
+        "summary": "校准实验单元重新给出结束依据：有限制地结束，并记录晚高峰缺少对照的问题。旧审阅（针对第2版）保留但不再是当前审阅。",
         "command": {
           "kind": "update_work_state",
           "unit_id": "unt_calib_exp",
@@ -9306,7 +9263,7 @@
           "reason": "补充晚高峰发现，改为有限制地结束。",
           "completion": {
             "kind": "closed_with_limitations",
-            "basis": "测试划分上的ECE比较已完成（5个随机种子，evd_ece_test）。按时段检查发现晚高峰子集校准后仍明显偏离（evd_peak），原因未查明；该问题作为反证记入主张 clm_calib_all_periods，并在对照实验中按时段单独报告，本单元不再继续调查。",
+            "basis": "测试划分上的ECE比较已完成（5个随机种子，evd_ece_test）。按时段检查时只计算了校准后的ECE：晚高峰子集为0.113，高于全天的0.058（evd_peak）。因为缺少该时段校准前的值，不能判断校准在晚高峰是否有改善；主张 clm_calib_all_periods 因此改为证据不足。补算校准前的值和按时段报告放到对照实验中，本单元不再继续调查。",
             "evidence_ids": [
               "evd_ece_test",
               "evd_peak"
@@ -9394,10 +9351,10 @@
               }
             ],
             "blocker": null,
-            "next_action": "无。晚高峰问题在对照实验中按时段单独报告。",
+            "next_action": "无。晚高峰问题在对照实验中按时段单独报告，并补算晚高峰校准前的ECE。",
             "completion": {
               "kind": "closed_with_limitations",
-              "basis": "测试划分上的ECE比较已完成（5个随机种子，evd_ece_test）。按时段检查发现晚高峰子集校准后仍明显偏离（evd_peak），原因未查明；该问题作为反证记入主张 clm_calib_all_periods，并在对照实验中按时段单独报告，本单元不再继续调查。",
+              "basis": "测试划分上的ECE比较已完成（5个随机种子，evd_ece_test）。按时段检查时只计算了校准后的ECE：晚高峰子集为0.113，高于全天的0.058（evd_peak）。因为缺少该时段校准前的值，不能判断校准在晚高峰是否有改善；主张 clm_calib_all_periods 因此改为证据不足。补算校准前的值和按时段报告放到对照实验中，本单元不再继续调查。",
               "evidence_ids": [
                 "evd_ece_test",
                 "evd_peak"
@@ -10262,7 +10219,7 @@
         "ui_surface": "fixture",
         "request_id": "req-act_build_brf_alloc_1"
       },
-      "payload_sha256": "e7ccdd0e70bdb22281b89f85a9d6468ec9978e9b330096b83a63885ad0f33b38",
+      "payload_sha256": "70657e0ad1f5ec8916c5795d866c474c8fb0d57f30488da95da1d6ebe76f8149",
       "payload": {
         "subject_id": "brf_alloc_exp",
         "subject_kind": "ReadingBrief",
@@ -10400,7 +10357,7 @@
               },
               {
                 "evidence_id": "evd_peak",
-                "label": "已知限制：晚高峰校准仍偏离",
+                "label": "已知限制：晚高峰校准后误差仍偏高",
                 "relationship": "limitation",
                 "source_locator": {
                   "kind": "experiment",
@@ -10571,7 +10528,7 @@
         "ui_surface": "fixture",
         "request_id": "req-act_build_brf_alloc_2"
       },
-      "payload_sha256": "b0f953a9889e696c542bde02bea32c013a6033475c93bd2645704a516023e46c",
+      "payload_sha256": "6a180e12cabc214407eb0f46e88d618e3242318eb03de57ad314c3e04b54b439",
       "payload": {
         "subject_id": "brf_alloc_exp",
         "subject_kind": "ReadingBrief",
@@ -10740,7 +10697,7 @@
               },
               {
                 "evidence_id": "evd_peak",
-                "label": "已知限制：晚高峰校准仍偏离",
+                "label": "已知限制：晚高峰校准后误差仍偏高",
                 "relationship": "limitation",
                 "source_locator": {
                   "kind": "experiment",
@@ -10800,7 +10757,7 @@
         "ui_surface": "checkpoint",
         "request_id": "req-act_fork_c"
       },
-      "payload_sha256": "2b4f5e986a788aa4859782ccf46736adbb0119c8d8ff8138b28b845ee1908e11",
+      "payload_sha256": "bf1945a7a8c61ffd07df38bbfd740321746505c27e113ff4a06b836e34e6f0ff",
       "payload": {
         "subject_id": "brn_c",
         "subject_kind": "Branch",
@@ -11052,7 +11009,7 @@
             "target_id": "evd_peak",
             "relation": "uses",
             "branch_id": "brn_c",
-            "rationale": "从旧快照继续时带上快照之后发现的反证。",
+            "rationale": "从旧快照继续时带上快照之后发现的限制。",
             "state": "active",
             "source_revision": 1,
             "target_revision": 1,

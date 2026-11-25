@@ -298,3 +298,9 @@ pre { font-family: var(--font-mono); font-size: 0.8125rem; background: var(--sur
 .test-page { max-width: var(--measure); margin: 0 auto; padding: 40px 24px; }
 
 @media print { .proto-note, .header, .no-print { display: none !important; } body { background: #fff; } }
+
+/* ---------------------------------------------------------------- D-007：过时提示、理由、历史版本 */
+.stale-note { margin: 6px 0 0; font-size: 0.8125rem; color: var(--amber); }
+.reason-form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2, transparent); }
+.reason-form textarea { min-height: 64px; }
+tr.changed > th, tr.changed > td { background: var(--amber-bg); }

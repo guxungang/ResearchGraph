@@ -5,9 +5,21 @@ import type {
   GraphEdge, Project, ProjectSnapshot, Proposal, ReadingBrief, ResearchUnit, ReviewRecord, SessionBinding,
 } from '@rw/contracts';
 import type { StageAExtensions } from '@fixtures/src/extension-types.ts';
+import { reviewCurrency } from '@rw/domain';
 
 export type { StageAExtensions };
 export type AnyEntity = { id: string; revision: number; updated_at?: string } & Record<string, unknown>;
+
+/**
+ * 新建路线时“需要独立代码工作区”的请求。合同 v1.0.0 的路线对象没有这一字段（D-007），
+ * 样机把请求记在事件上，界面一直显示“尚未创建”，直到真实系统回报工作区已建立。
+ */
+export interface WorktreeRequest {
+  branch_id: string;
+  unit_id: string;
+  requested_at: string;
+  status: 'requested';
+}
 
 /** 样机在浏览器里模拟的事件：只存在于本机浏览器存储，不写入任何项目。 */
 export interface LocalEvent {
@@ -19,6 +31,7 @@ export interface LocalEvent {
   entities: AnyEntity[];
   refs: string[];
   projectRevisionAfter: number;
+  requests?: WorktreeRequest[];
 }
 
 export interface Flags {
@@ -57,7 +70,7 @@ export interface Model {
   runs: ExperimentRun[];
   checkpoints: Checkpoint[];
   proposals: Proposal[];
-  reviews: ReviewRecord[];
+  reviews: ReviewView[];
   sessions: SessionBinding[];
   caps: CapabilityManifest[];
   contexts: ContextBundle[];
@@ -68,7 +81,11 @@ export interface Model {
   history: Map<string, AnyEntity[]>;
   timeline: TimelineEntry[];
   lastSeq: number;
+  worktreeRequests: WorktreeRequest[];
 }
+
+/** 审阅加上“被谁更正”：同一人对同一版本先后审阅时，旧的一条保留为历史。 */
+export type ReviewView = ReviewRecord & { superseded_by: string | null };
 
 const COLLECTIONS = {
   brn: 'branches', unt: 'units', edg: 'edges', clm: 'claims', evd: 'evidence', dec: 'decisions', art: 'artifacts', run: 'runs', ckp: 'checkpoints',
@@ -115,11 +132,10 @@ export function buildModel(snapshot: ProjectSnapshot, ext: StageAExtensions, loc
   const collect = <T,>(prefix: keyof typeof COLLECTIONS) =>
     [...byId.values()].filter((e) => e.id.startsWith(`${prefix}_`)) as unknown as T[];
 
-  // 审阅的当前性由目标对象的当前修订计算（AC-021）
-  const reviews = collect<ReviewRecord>('rev').map((r) => {
-    const target = byId.get(r.target_id);
-    return { ...r, is_current: !!target && target.revision === r.reviewed_revision };
-  });
+  // 审阅的当前性：目标对象的当前修订（AC-021），且同一人对同一版本以最新一条为准
+  const rawReviews = collect<ReviewRecord>('rev');
+  const currency = reviewCurrency(rawReviews, (id) => byId.get(id)?.revision);
+  const reviews: ReviewView[] = rawReviews.map((r) => ({ ...r, ...currency.get(r.id)! }));
 
   const timeline: TimelineEntry[] = [
     ...(snapshot.events as Event[]).map((ev) => ({
@@ -172,6 +188,7 @@ export function buildModel(snapshot: ProjectSnapshot, ext: StageAExtensions, loc
     history,
     timeline,
     lastSeq: Math.max(snapshot.last_event_seq, ...local.map((e) => e.seq)),
+    worktreeRequests: local.flatMap((e) => e.requests ?? []),
   };
 }
 
@@ -202,29 +219,67 @@ export const edgesFrom = (m: Model, id: string, relation?: string) => m.edges.fi
 
 export const capabilityOf = (m: Model, harnessInstanceId: string) => m.caps.find((c) => c.harness_instance_id === harnessInstanceId);
 
-/** 主线当前路径：从根单元到焦点单元的 continues_to 链。 */
-export function currentPath(m: Model): Set<string> {
-  const path = new Set<string>();
-  let cur = m.project.focus_unit_id;
-  const lineage = m.edges.filter((e) => e.relation === 'continues_to' && e.state === 'active');
-  while (cur && !path.has(cur)) {
-    path.add(cur);
-    const parent = lineage.find((e) => e.target_id === cur);
-    cur = parent?.source_id ?? null;
+const lineageOf = (m: Model) => m.edges.filter((e) => e.relation === 'continues_to' && e.state === 'active');
+
+/** 一个单元的全部来源：沿 continues_to 向上走过所有上级（多条路线汇合时，每条来源都算）。 */
+export function ancestors(m: Model, unitId: string): Set<string> {
+  const lineage = lineageOf(m);
+  const out = new Set<string>();
+  const stack = [unitId];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    if (out.has(cur)) continue;
+    out.add(cur);
+    for (const e of lineage) if (e.target_id === cur) stack.push(e.source_id);
   }
-  return path;
+  return out;
 }
 
-/** 待审阅：对象有过审阅，但当前修订没有当前审阅（新修订不继承旧审阅）。 */
+/** 主线当前路径：焦点单元及其所有来源。 */
+export const currentPath = (m: Model): Set<string> => (m.project.focus_unit_id ? ancestors(m, m.project.focus_unit_id) : new Set());
+
+/** 单元在谱系中的深度：到根单元的最长路径（有多个上级时取最深的一条，保证排在所有来源之后）。 */
+export function unitDepth(m: Model, unitId: string): number {
+  const lineage = lineageOf(m);
+  const memo = new Map<string, number>();
+  const depth = (id: string, seen: Set<string>): number => {
+    if (memo.has(id)) return memo.get(id)!;
+    if (seen.has(id)) return 0;
+    const parents = lineage.filter((e) => e.target_id === id).map((e) => e.source_id);
+    const d = parents.length ? Math.max(...parents.map((p) => depth(p, new Set(seen).add(id)))) + 1 : 0;
+    memo.set(id, d);
+    return d;
+  };
+  return depth(unitId, new Set());
+}
+
+/** 一个对象当前修订上、你本人最新的审阅（没有则为空）。 */
+export const currentReview = (m: Model, targetId: string) => reviewsFor(m, targetId).find((r) => r.is_current);
+
+/**
+ * 待审阅：对象有过审阅，但当前修订上还没有你的审阅结论（新修订不继承旧审阅）。
+ * 你已经标“需要修改”的不在这里：那是在等新版本，见 changesRequested。
+ */
 export function reviewQueue(m: Model) {
   const out: { id: string; revision: number; previous: number; previousStatus: string }[] = [];
   for (const e of [...m.units, ...m.briefs] as { id: string; revision: number }[]) {
     const rs = reviewsFor(m, e.id);
     if (!rs.length) continue;
-    const current = rs.some((r) => r.is_current && (r.status !== 'unreviewed' || e.id.startsWith('brf_')));
-    if (!current) out.push({ id: e.id, revision: e.revision, previous: rs[0].reviewed_revision, previousStatus: rs[0].status });
+    const cur = rs.find((r) => r.is_current);
+    const settled = cur && (cur.status !== 'unreviewed' || e.id.startsWith('brf_'));
+    if (!settled) {
+      const prev = rs.find((r) => r.status !== 'unreviewed') ?? rs[0];
+      out.push({ id: e.id, revision: e.revision, previous: prev.reviewed_revision, previousStatus: prev.status });
+    }
   }
   return out;
+}
+
+/** 你要求修改、正在等新版本的对象。它们不算你的待办，但要一直看得见，修改意见也要看得见。 */
+export function changesRequested(m: Model) {
+  return [...m.units, ...m.briefs]
+    .map((e) => ({ id: e.id, revision: e.revision, review: currentReview(m, e.id) }))
+    .filter((x): x is { id: string; revision: number; review: ReviewView } => x.review?.status === 'needs_changes');
 }
 
 /** “待处理”中的事项：待决定、待处理的候选、待审阅。暂缓的不计入。 */

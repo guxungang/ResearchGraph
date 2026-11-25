@@ -11,6 +11,7 @@ import { DecisionsView } from './views/DecisionsView.tsx';
 import { EvidenceView } from './views/EvidenceView.tsx';
 import { ConnectionsView } from './views/ConnectionsView.tsx';
 import { CheckpointView } from './views/CheckpointView.tsx';
+import { VersionView } from './views/VersionView.tsx';
 import { TestIndexView, TestMaterialView } from './views/TestViews.tsx';
 
 function Settings() {
@@ -62,6 +63,7 @@ export function App() {
     case 'compare': view = <CompareView route={route} />; section = 'map'; break;
     case 'unit': view = <UnitView id={second} route={route} />; section = 'map'; break;
     case 'checkpoint': view = <CheckpointView id={second} />; section = 'map'; break;
+    case 'at': view = <VersionView id={second} revision={Number(third)} />; break;
     case 'decisions': view = <DecisionsView route={route} />; section = 'todo'; break;
     case 'evidence': view = <EvidenceView route={route} />; section = 'library'; break;
     case 'glossary': view = <EvidenceView route={route} forceTab="terms" />; section = 'library'; break;

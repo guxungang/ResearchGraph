@@ -1,10 +1,12 @@
 // 样机内的“本地服务”模拟。阶段A没有真实服务端：这里在浏览器中按方案 §14.4 的顺序做检查
 // （身份 → 版本 → 状态转换 → 图关系 → 授权），通过后生成新的对象修订和一条本地事件。
 // 所有结果只保存在本机浏览器存储中，不写入任何项目；界面上有明确提示。
-import type { ActorRef, Checkpoint, Claim, Decision, Evidence, GraphEdge, Proposal, Provenance, ResearchUnit, ReviewRecord } from '@rw/contracts';
-import { checkApplyPrincipal, checkCapability, checkRevision, grantCovers, wouldCreateCycle, type ServiceError } from '@rw/domain';
+import type { ActorRef, Checkpoint, Claim, Decision, Evidence, GraphEdge, Proposal, Provenance, ReadingBrief, ResearchUnit, ReviewRecord } from '@rw/contracts';
+import { checkApplyPrincipal, checkCapability, checkProposalPremises, checkRevision, grantCovers, wouldCreateCycle, type GrantTarget, type ServiceError } from '@rw/domain';
 import { get, revisionAt, type AnyEntity, type Flags, type LocalEvent, type Model } from './model.ts';
-import { displayName, versionText } from './format.ts';
+import { evidenceClaims, type EvidenceRole } from './derive.ts';
+import { displayName, fmtTime, versionText } from './format.ts';
+import { sha256Hex } from './sha256.ts';
 
 export type Result = { ok: true; message: string; events?: LocalEvent[]; flags?: Partial<Flags> } | { ok: false; error: ServiceError; flags?: Partial<Flags> };
 
@@ -38,10 +40,10 @@ function revise<T extends AnyEntity>(e: T, at: string, patch: Partial<T>, action
   return { ...e, ...patch, revision: e.revision + 1, updated_at: at, provenance: prov(actionId, at, what, surface) } as T;
 }
 
-function ownerGrantCheck(m: Model, action: string, target: Parameters<typeof grantCovers>[2] = {}): ServiceError | null {
+function ownerGrantCheck(m: Model, action: string, target: Omit<GrantTarget, 'projectId'> = {}): ServiceError | null {
   const g = get<Parameters<typeof grantCovers>[0]>(m, OWNER_GRANT);
   if (!g) return { status: 403, code: 'forbidden', message: '找不到人工操作授权。', recovery: '在项目设置中确认授权。' };
-  const res = grantCovers(g, action, target, nowIso());
+  const res = grantCovers(g, action, { projectId: m.project.id, ...target }, OWNER, nowIso());
   return res.ok ? null : { status: 403, code: 'forbidden', message: res.reason, recovery: '这类操作需要相应范围的授权。' };
 }
 
@@ -58,6 +60,12 @@ const event = (m: Model, type: string, summary: string, entities: AnyEntity[], r
 
 const bumpProject = (m: Model, at: string, actionId: string) => revise(m.project as unknown as AnyEntity, at, {}, actionId, '项目语义版本递增', 'workbench');
 
+/** 候选依据的对象修订是否仍是当前修订。 */
+const premisesOf = (m: Model, p: Proposal) => checkProposalPremises(p.target_revision_refs, (id) => m.byId.get(id)?.revision);
+
+/** 用户没写理由时如实记录，不替用户编造理由。 */
+const reasonOrGap = (reason: string | undefined) => reason?.trim() || '研究负责人没有填写理由。';
+
 // ---------------------------------------------------------------- 审阅与理解
 export function recordReview(m: Model, args: { targetId: string; status: 'accepted' | 'needs_changes'; findings: string }): Result {
   const at = nowIso();
@@ -65,6 +73,8 @@ export function recordReview(m: Model, args: { targetId: string; status: 'accept
   if (err) return { ok: false, error: err };
   const target = m.byId.get(args.targetId);
   if (!target) return { ok: false, error: { status: 404, code: 'not_found', message: '审阅对象不存在。', recovery: '刷新后重试。' } };
+  if (args.status === 'needs_changes' && !args.findings.trim())
+    return { ok: false, error: { status: 400, code: 'validation_failed', message: '“需要修改”要写明改什么。', recovery: '写一句需要修改的地方，再提交。' } };
   const seq = m.lastSeq + 1;
   const previous = m.reviews.find((r) => r.target_id === args.targetId && r.reviewed_revision === target.revision && r.is_current);
   const review: ReviewRecord = {
@@ -81,7 +91,7 @@ export function recordReview(m: Model, args: { targetId: string; status: 'accept
     status: args.status,
     reviewer: OWNER,
     understanding_status: (previous?.understanding_status ?? 'not_reported') as ReviewRecord['understanding_status'],
-    findings: args.findings ? [args.findings] : [],
+    findings: args.findings.trim() ? [args.findings.trim()] : [],
     evidence_ids: [],
     is_current: true,
     source_revision_refs: [{ entity_id: args.targetId, revision: target.revision }],
@@ -90,7 +100,7 @@ export function recordReview(m: Model, args: { targetId: string; status: 'accept
   const verdict = args.status === 'accepted' ? '审阅通过' : '需要修改';
   return {
     ok: true,
-    message: `已记录：你对“${name}”${versionText(target.revision)}的审阅为“${verdict}”。审阅只针对这个版本；它不授权执行，也不改变任何主张的评估。`,
+    message: `已记录：你对“${name}”${versionText(target.revision)}的审阅为“${verdict}”${previous && previous.status !== 'unreviewed' ? `（更正了你之前对同一版本的“${previous.status === 'accepted' ? '审阅通过' : '需要修改'}”，旧记录保留在历史中）` : ''}。审阅只针对这个版本；它不授权执行，也不改变任何主张的评估。`,
     events: [event(m, 'review.recorded', `研究负责人对“${name}”${versionText(target.revision)}的审阅：${verdict}。`, [review as unknown as AnyEntity], [args.targetId], m.project.revision, at)],
   };
 }
@@ -167,10 +177,11 @@ export function decide(m: Model, args: { decisionId: string; optionId: string | 
   const seq = m.lastSeq + 1;
   const actionId = `act_decide_${seq}`;
   const grant = get<{ revision: number }>(m, OWNER_GRANT)!;
+  const reason = reasonOrGap(args.reason);
   const updatedDecision = revise(dec as unknown as AnyEntity, at, {
     status: args.optionId ? 'accepted' : 'rejected',
     accepted_option_id: args.optionId,
-    rationale: args.reason || dec.rationale,
+    rationale: reason,
     authorized_by_grant_id: OWNER_GRANT,
     authorization_grant_revision: grant.revision,
     acceptance_source: userLocator(actionId, at, '在决策卡上作出选择', 'decision-card'),
@@ -178,8 +189,10 @@ export function decide(m: Model, args: { decisionId: string; optionId: string | 
   } as Partial<AnyEntity>, actionId, '在决策卡上作出选择', 'decision-card');
 
   const entities: AnyEntity[] = [updatedDecision];
-  const command = { kind: 'decide_decision', decision_id: dec.id, status: args.optionId ? 'accepted' : 'rejected', accepted_option_id: args.optionId, reason: args.reason || '研究负责人的选择' };
-  const via = args.viaProposalId ? get<Proposal>(m, args.viaProposalId) : undefined;
+  const command = { kind: 'decide_decision', decision_id: dec.id, status: args.optionId ? 'accepted' : 'rejected', accepted_option_id: args.optionId, reason };
+  // 经由模型的候选作出选择时，候选依据的对象必须仍是当前版本；否则按研究负责人自己的选择记录，候选标为“前提已变化”
+  const candidate = args.viaProposalId ? get<Proposal>(m, args.viaProposalId) : undefined;
+  const via = candidate && !premisesOf(m, candidate) ? candidate : undefined;
   const usedProposalId = via ? via.id : localId('pro', seq);
   if (via) {
     entities.push(revise(via as unknown as AnyEntity, at, { status: 'applied', applied_by_event_id: `evt_${seq}` } as Partial<AnyEntity>, actionId, '人工采用模型建议', 'decision-card'));
@@ -204,9 +217,7 @@ export function decide(m: Model, args: { decisionId: string; optionId: string | 
   const summary = opt ? `研究负责人采用方案“${opt.label}”（${dec.question}）。` : `研究负责人决定不采用（${dec.question}）。`;
   return {
     ok: true,
-    message: opt
-      ? `已采用方案“${opt.label}”。这表示允许按此推进，不表示科学上已证明；相关路线的状态和执行会话不会因此自动改变。`
-      : '已记录“不采用”。原决定的选项和依据保留在历史中。',
+    message: `${opt ? `已采用方案“${opt.label}”。这表示允许按此推进，不表示科学上已证明；相关路线的状态和执行会话不会因此自动改变。` : '已记录“不采用”。原决定的选项和依据保留在历史中。'}${args.reason?.trim() ? '理由已保存。' : '你没有填写理由，记录里会写明“没有填写理由”。'}${candidate && !via ? '模型的候选所依据的内容已经变化，因此没有把这次选择算作采用该候选。' : ''}`,
     events: [event(m, opt ? 'decision.accepted' : 'decision.rejected', summary, entities, [dec.id], project.revision, at)],
   };
 }
@@ -218,10 +229,10 @@ export function rejectProposal(m: Model, args: { proposalId: string; reason: str
   if (p.status !== 'candidate' && p.status !== 'ready')
     return { ok: false, error: { status: 422, code: 'invalid_transition', message: `候选当前为“${p.status}”，不能拒绝。`, recovery: '无需操作。' } };
   const seq = m.lastSeq + 1;
-  const updated = revise(p as unknown as AnyEntity, at, { status: 'rejected', summary: `${p.summary}　拒绝理由：${args.reason || '未填写'}` } as Partial<AnyEntity>, `act_reject_${seq}`, '拒绝候选', 'decision-card');
+  const updated = revise(p as unknown as AnyEntity, at, { status: 'rejected', summary: `${p.summary}　拒绝理由：${reasonOrGap(args.reason)}` } as Partial<AnyEntity>, `act_reject_${seq}`, '拒绝候选', 'decision-card');
   return {
     ok: true,
-    message: `已拒绝“${p.title}”。拒绝理由已保存；模型下次检索时会看到它已被拒绝。`,
+    message: `已拒绝“${p.title}”。${args.reason?.trim() ? '拒绝理由已保存' : '你没有填写理由，记录里会写明“没有填写理由”'}；模型下次检索时会看到它已被拒绝。`,
     events: [event(m, 'proposal.rejected', `研究负责人拒绝候选“${p.title}”。`, [updated], [p.id], m.project.revision, at)],
   };
 }
@@ -235,6 +246,8 @@ export function applyCreateUnitProposal(m: Model, args: { proposalId: string; ex
   if (conflict) return { ok: false, error: conflict };
   if (p.status !== 'candidate' && p.status !== 'ready')
     return { ok: false, error: { status: 422, code: 'invalid_transition', message: `候选当前为“${p.status}”，不能采用。`, recovery: '无需操作。' } };
+  const premises = premisesOf(m, p);
+  if (premises) return { ok: false, error: premises };
   for (const action of p.requested_grant_actions) {
     const err = ownerGrantCheck(m, action);
     if (err) return { ok: false, error: err };
@@ -332,7 +345,8 @@ export interface ForkPreview {
   inherit: { id: string; note: string }[];
   history: { id: string; note: string }[];
   revalidate: { id: string; note: string }[];
-  counterevidence: Evidence[];
+  /** 快照之后发现、挑战或限制快照时已知主张的证据。从快照继续时必须带上，不能悄悄恢复已知不成立的假设（方案 §4.6）。 */
+  later: { evidence: Evidence; relations: { claim_id: string; role: EvidenceRole }[] }[];
 }
 
 export function forkPreview(m: Model, checkpointId: string): ForkPreview | null {
@@ -355,10 +369,11 @@ export function forkPreview(m: Model, checkpointId: string): ForkPreview | null 
       revalidate.push({ id: ref.entity_id, note: `快照时为${versionText(ref.revision)}（${then?.assessment ?? '未知'}），现在为${versionText(now.revision)}（${now.assessment}）。需要按当前证据重新判断。` });
   }
   const known = new Set(ckp.known_claim_ids);
-  const counterevidence = m.evidence.filter(
-    (e) => e.created_at > ckp.created_at && m.edges.some((g) => g.relation === 'contradicts' && g.source_id === e.id && known.has(g.target_id)),
-  );
-  return { checkpoint: ckp, inherit, history, revalidate, counterevidence };
+  const later = m.evidence
+    .filter((e) => e.created_at > ckp.created_at)
+    .map((e) => ({ evidence: e, relations: evidenceClaims(m, [e.id]).filter((r) => known.has(r.claim_id) && r.role !== 'supports').map((r) => ({ claim_id: r.claim_id, role: r.role })) }))
+    .filter((x) => x.relations.length);
+  return { checkpoint: ckp, inherit, history, revalidate, later };
 }
 
 function newEdge(m: Model, id: string, source: string, sourceRev: number, relation: string, target: string, targetRev: number, branchId: string | null, rationale: string, at: string, actionId: string): AnyEntity {
@@ -399,18 +414,99 @@ export function forkFromCheckpoint(m: Model, args: { checkpointId: string; name:
     provenance: prov(actionId, at, '新建起始研究单元', 'checkpoint'),
     branch_id: branchId, title: args.name.trim(), question: args.question.trim(), purpose: `从快照“${ckp.title}”继续的新路线。`, work_state: 'planned',
     parent_unit_ids: [ckp.unit_id], claim_ids: preview.revalidate.map((x) => x.id), decision_ids: inheritedDecisions,
-    evidence_ids: preview.counterevidence.map((e) => e.id), artifact_version_ids: [], acceptance_criteria: [], blocker: null,
+    evidence_ids: preview.later.map((x) => x.evidence.id), artifact_version_ids: [], acceptance_criteria: [], blocker: null,
     next_action: '补充完成条件，并决定开展时机。', owner_principal_id: 'usr_owner', completion: null,
   };
   const entities: AnyEntity[] = [branch, unit, newEdge(m, `edg_local${seq}_lineage`, ckp.unit_id, baseUnit.revision, 'continues_to', unitId, 1, branchId, `从快照“${ckp.title}”继续。`, at, actionId)];
-  for (const e of preview.counterevidence) entities.push(newEdge(m, `edg_local${seq}_${e.id}`, unitId, 1, 'uses', e.id, e.revision, branchId, '从旧快照继续时带上快照之后发现的反证。', at, actionId));
+  for (const x of preview.later) entities.push(newEdge(m, `edg_local${seq}_${x.evidence.id}`, unitId, 1, 'uses', x.evidence.id, x.evidence.revision, branchId, '从旧快照继续时带上快照之后发现的反证或限制。', at, actionId));
+  entities.push(basicBrief(m, { seq, at, actionId, branchId, unit: unit as unknown as ResearchUnit, checkpoint: ckp, baseUnit, preview }) as unknown as AnyEntity);
   const project = bumpProject(m, at, actionId);
   entities.push(project);
+  const n = preview.later.length;
   return {
     ok: true,
-    message: `已新建路线“${args.name.trim()}”（待开始）。当前工作目录保持不变${args.createWorktree ? '；样机不创建真实的代码工作区，只记录“需要独立工作区”' : ''}。已带上 ${preview.counterevidence.length} 条快照之后发现的反证。`,
-    events: [event(m, 'branch.created', `研究负责人从快照“${ckp.title}”继续，新建路线“${args.name.trim()}”。`, entities, [ckp.id, ...preview.counterevidence.map((e) => e.id)], project.revision, at)],
+    message: `已新建路线“${args.name.trim()}”（待开始），并生成了一份基础说明。当前工作目录保持不变。${args.createWorktree ? '已记录“需要独立代码工作区”的请求；样机不能创建工作区，界面会一直标为“尚未创建”。' : ''}${n ? `已带上 ${n} 条快照之后发现的反证或限制。` : ''}`,
+    events: [{
+      ...event(m, 'branch.created', `研究负责人从快照“${ckp.title}”继续，新建路线“${args.name.trim()}”${args.createWorktree ? '，并要求独立代码工作区（尚未创建）' : ''}。`, entities, [ckp.id, ...preview.later.map((x) => x.evidence.id)], project.revision, at),
+      requests: args.createWorktree ? [{ branch_id: branchId, unit_id: unitId, requested_at: at, status: 'requested' as const }] : undefined,
+    }],
   };
+}
+
+/**
+ * 新路线的基础说明：只用已有记录按固定模板整理（名称、研究问题、出发点、继承的决定、需要重新判断的主张、带上的反证与限制），
+ * 不做新的分析。这样新单元一建立就有可读的说明，而不是空白；模型或人工之后再补充（方案 §5.1：说明单独生成）。
+ */
+function basicBrief(
+  m: Model,
+  a: { seq: number; at: string; actionId: string; branchId: string; unit: ResearchUnit; checkpoint: Checkpoint; baseUnit: ResearchUnit; preview: ForkPreview },
+): ReadingBrief {
+  const { unit, checkpoint: ckp, baseUnit, preview } = a;
+  const refs: ReadingBrief['source_revision_refs'] = [
+    { entity_id: m.project.id, revision: m.project.revision + 1 },
+    { entity_id: a.branchId, revision: 1 },
+    { entity_id: unit.id, revision: 1 },
+    { entity_id: ckp.id, revision: ckp.revision },
+    { entity_id: baseUnit.id, revision: baseUnit.revision },
+    ...preview.inherit.map((x) => ({ entity_id: x.id, revision: get<Decision>(m, x.id)!.revision })),
+    ...preview.revalidate.map((x) => ({ entity_id: x.id, revision: get<Claim>(m, x.id)!.revision })),
+    ...preview.later.map((x) => ({ entity_id: x.evidence.id, revision: x.evidence.revision })),
+  ];
+  const templateActor: ActorRef = { principal_id: 'svc_brief_template', kind: 'service', authentication_ref: 'auth_internal_template', grant_id: null };
+  return {
+    id: localId('brf', a.seq),
+    revision: 1,
+    project_id: m.project.id,
+    created_at: a.at,
+    updated_at: a.at,
+    valid_time: { from: a.at, to: null },
+    provenance: {
+      observation_kind: 'inferred',
+      source_refs: [userLocator(a.actionId, a.at, '新建路线时按模板生成基础说明', 'checkpoint')],
+      created_by: templateActor,
+      derivation_note: '按固定模板整理已有记录，没有模型参与，也没有新的分析。',
+    },
+    unit_id: unit.id,
+    audience: 'general_researcher',
+    source_revision_refs: refs,
+    title: unit.title,
+    project_background: `${m.project.goal}${(m.project as { problem_statement?: string }).problem_statement ? `${(m.project as { problem_statement?: string }).problem_statement}` : ''}`,
+    why_this_work: `这条路线从快照“${ckp.title}”（${fmtTime(ckp.created_at)}）继续，出发点是“${baseUnit.title}”。你给出的研究问题是：${unit.question}`,
+    current_question: unit.question,
+    prerequisites: [],
+    method_explanation: '还没有方法说明。开始工作前需要补充做法和完成条件。',
+    // 合同规定“已经知道”最多3条：继承的决定合成一条，带上的反证与限制合成一条
+    key_findings: [
+      preview.inherit.length ? `继承的决定：${preview.inherit.map((x) => displayName(m, x.id)).join('；')}。` : null,
+      preview.later.length ? `快照之后发现、已经带上的反证或限制：${preview.later.map((x) => x.evidence.title).join('；')}。` : null,
+    ].filter((x): x is string => !!x) as ReadingBrief['key_findings'],
+    not_yet_established: [
+      ...preview.revalidate.map((x) => `需要按当前证据重新判断：${displayName(m, x.id)}`),
+      '这条路线自己的结果：还没有开始。',
+    ],
+    implementation_changes: [],
+    project_impact: '尚未开展，暂时不影响其他路线。',
+    recommended_next_step: unit.next_action,
+    decision_request: null,
+    evidence_links: preview.later.map((x) => ({
+      evidence_id: x.evidence.id,
+      label: x.evidence.title,
+      relationship: x.relations.some((r) => r.role === 'contradicts') ? ('contradicts' as const) : ('limitation' as const),
+      source_locator: x.evidence.source_locator,
+    })),
+    limitations: ['这是系统按模板生成的基础说明，只整理了已有记录，没有新的分析。'],
+    readability_checks: { unexplained_terms: [], unresolved_references: [], source_gaps: ['还没有方法说明，也没有这条路线自己的证据。'], status: 'not_checked' },
+    generation: {
+      mode: 'template',
+      model_provider: null,
+      model_id: null,
+      prompt_template_id: null,
+      template_version: 'fork-basic-0.1',
+      input_sha256: sha256Hex(JSON.stringify(refs)),
+      generated_at: a.at,
+      processing_command_id: null,
+    },
+  } as ReadingBrief;
 }
 
 // ---------------------------------------------------------------- 授权撤销（AC-038：撤销后阻止新动作，不伪装回滚已发生的副作用）
@@ -423,7 +519,7 @@ export function revokeGrant(m: Model, args: { grantId: string; expectedRevision:
   if (g.status !== 'active') return { ok: false, error: { status: 422, code: 'invalid_transition', message: '这项授权已经不是有效状态。', recovery: '无需操作。' } };
   const seq = m.lastSeq + 1;
   const actionId = `act_revoke_${seq}`;
-  const updated = revise(g, at, { status: 'revoked', revoked_at: at, reason: `${g.reason as string}　撤销理由：${args.reason || '未填写'}` } as Partial<AnyEntity>, actionId, '撤销授权', 'grants');
+  const updated = revise(g, at, { status: 'revoked', revoked_at: at, reason: `${g.reason as string}　撤销理由：${reasonOrGap(args.reason)}` } as Partial<AnyEntity>, actionId, '撤销授权', 'grants');
   const project = bumpProject(m, at, actionId);
   return {
     ok: true,
@@ -438,11 +534,11 @@ export function policyApplyRoutine(m: Model, args: { grantId: string; unitId: st
   const g = get<Parameters<typeof grantCovers>[0]>(m, args.grantId);
   const unit = get<ResearchUnit>(m, args.unitId);
   if (!g || !unit) return { ok: false, error: { status: 404, code: 'not_found', message: '授权或研究单元不存在。', recovery: '刷新后重试。' } };
-  const res = grantCovers(g, 'unit.revise', { unitId: unit.id, branchId: unit.branch_id }, at);
+  const policyActor: ActorRef = { principal_id: 'svc_policy', kind: 'service', authentication_ref: 'auth_internal_policy', grant_id: g.id };
+  const res = grantCovers(g, 'unit.revise', { projectId: m.project.id, unitId: unit.id, branchId: unit.branch_id }, policyActor, at);
   if (!res.ok) return { ok: false, error: { status: 403, code: 'forbidden', message: `策略服务没有应用：${res.reason}`, recovery: '候选会保留，等待你在决策中心处理。' } };
   const seq = m.lastSeq + 1;
   const actionId = `act_policy_${seq}`;
-  const policyActor: ActorRef = { principal_id: 'svc_policy', kind: 'service', authentication_ref: 'auth_internal_policy', grant_id: g.id };
   const updated = { ...revise(unit as unknown as AnyEntity, at, { next_action: args.nextAction } as Partial<AnyEntity>, actionId, '策略服务依据授权应用', 'policy'), provenance: { observation_kind: 'observed', source_refs: [userLocator(actionId, at, `策略服务依据授权 ${g.id} 自动应用（引用授权，不冒充人工操作）`, 'policy')], created_by: policyActor, derivation_note: '阶段A样机中的模拟操作。' } };
   const project = bumpProject(m, at, actionId);
   return {

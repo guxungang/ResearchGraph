@@ -4,6 +4,24 @@
 
 export type Ref = string;
 
+/** 一段说明写作时依据的对象版本。对象之后有新版本，说明就标记为过时（方案 §5.6）。 */
+export interface RevisionRef {
+  entity_id: Ref;
+  revision: number;
+}
+
+/**
+ * 待关注事项在什么状态下仍然成立。条件不成立时，界面自动不再显示这条提醒；
+ * 提醒是否还有效由项目状态计算，不依靠手工维护的列表。
+ */
+export type AttentionCheck =
+  | { kind: 'decision_pending'; decision_id: Ref }
+  | { kind: 'proposal_open'; proposal_id: Ref }
+  | { kind: 'review_needed'; target_id: Ref }
+  | { kind: 'claim_without_evidence'; claim_id: Ref }
+  | { kind: 'artifact_not_local'; artifact_version_id: Ref }
+  | { kind: 'capability_missing'; capability_id: Ref; capability: string };
+
 export type AttentionKind = 'decision' | 'drift' | 'evidence_gap' | 'review' | 'source' | 'capability' | 'blocker';
 
 export interface AttentionItem {
@@ -22,6 +40,8 @@ export interface AttentionItem {
   priority: number;
   priority_reason: string;
   target: string;
+  /** 这条提醒在什么状态下仍然成立。 */
+  open_while: AttentionCheck;
 }
 
 export interface GlossaryEntry {
@@ -96,6 +116,8 @@ export interface Comparison {
     label: string;
     /** 卡片上只显示的几句话；null 显示为“未知”。 */
     card: { aim: string; evidence_for: string | null; evidence_against: string | null; completion: string | null; cost: '低' | '中' | '高'; status: string };
+    /** 这张卡片写作时依据的对象版本。 */
+    basis: RevisionRef[];
     dims: Record<DimKey, { text: string; refs: Ref[] } | null>;
   }[];
   groups: { id: string; label: string; comparable: boolean; note: string }[];
@@ -125,6 +147,13 @@ export interface StageAExtensions {
   notice: string;
   /** 没有自然标题的对象（授权、会话、约束等）在界面上的简短名称。 */
   display_names: Record<Ref, string>;
+  /** 路线在图上和标签里使用的短名称；没有时用路线全名。 */
+  short_names: Record<Ref, string>;
+  /**
+   * 证据“限制主张的适用范围”，但既不支持也不反驳它（例如缺少对照，只能说明某个条件下结果仍不理想）。
+   * 合同 v1.0.0 的证据关系只有支持与反驳，v1.1 需要正式补上（D-007）。
+   */
+  evidence_limits: { evidence_id: Ref; claim_id: Ref; note: string }[];
   /** 列表中显示的一句话说明（决定为什么要现在选、候选是什么、运行测了什么）。 */
   one_liners: Record<Ref, string>;
   /** 实验运行的关键结果，一句话。 */
@@ -132,13 +161,15 @@ export interface StageAExtensions {
   contract_gaps: { topic: string; spec_section: string; decision_record: string }[];
   viewer: { principal_id: Ref; display_name: string; last_visit_at: string; now: string };
   home: {
-    /** 首页的要点：问题、主线、已知、未知、正在做。每项一句话。 */
+    /**
+     * 首页的要点：问题、主线、已知、未知。每项一句话，并记下写作时依据的对象版本。
+     * “正在做”不在这里：它由项目当前的焦点单元和执行会话算出。
+     */
     summary: {
       question: string;
-      mainline: string;
-      known: { text: string; detail: string; ref: Ref };
-      unknown: { text: string; detail: string; ref: Ref };
-      doing: { text: string; ref: Ref };
+      mainline: { text: string; basis: RevisionRef[] };
+      known: { text: string; detail: string; ref: Ref; basis: RevisionRef[] };
+      unknown: { text: string; detail: string; ref: Ref; basis: RevisionRef[] };
     };
     brief_paragraphs: string[];
     changes_since_last_visit: { at: string; text: string; short: string; refs: Ref[] }[];

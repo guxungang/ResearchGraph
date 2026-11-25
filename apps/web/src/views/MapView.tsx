@@ -5,20 +5,17 @@ import ELK from 'elkjs/lib/elk.bundled.js';
 import type { ResearchUnit } from '@rw/contracts';
 import { WORK_STATE, label } from '@rw/domain';
 import { useStore } from '../data/store.tsx';
-import { currentPath, get, runningSessionFor, type Model } from '../data/model.ts';
+import { currentPath, get, runningSessionFor, unitDepth, type Model } from '../data/model.ts';
+import { branchShort, routeColor } from '../data/format.ts';
 import { navigate, type Route } from '../router.ts';
 import { Badge } from '../components/ui.tsx';
 
-const ROUTE_COLOR: Record<string, string> = { brn_main: 'var(--route-main)', brn_a: 'var(--route-a)', brn_c: 'var(--route-c)', brn_net: 'var(--route-net)' };
-export const routeColor = (id: string) => ROUTE_COLOR[id] ?? 'var(--route-new)';
 const PINS_KEY = 'rw.stageA.map.pins.v1';
 const LAYOUT_KEY = 'rw.stageA.map.layout.v1';
 const NODE_W = 210;
 const NODE_H = 92;
-const SHORT_BRANCH: Record<string, string> = { brn_main: '路线B（主线）', brn_a: '路线A', brn_c: '路线C', brn_net: '复杂网络（已关闭）' };
-export const branchShort = (m: Model, id: string) => SHORT_BRANCH[id] ?? m.branches.find((b) => b.id === id)?.name ?? id;
 
-type UnitNodeData = { unit: ResearchUnit; onPath: boolean; viewing: boolean; executing: boolean };
+type UnitNodeData = { unit: ResearchUnit; onPath: boolean; viewing: boolean; executing: boolean; color: string };
 type CollapsedData = { name: string; count: number; onExpand: () => void };
 
 function UnitNode({ data }: NodeProps<Node<UnitNodeData>>) {
@@ -26,7 +23,7 @@ function UnitNode({ data }: NodeProps<Node<UnitNodeData>>) {
   return (
     <div
       className={`unit-node ${data.onPath ? 'on-path' : ''} ${data.viewing ? 'selected' : ''}`}
-      style={{ borderTopColor: routeColor(u.branch_id) }}
+      style={{ borderTopColor: data.color }}
       aria-label={`${u.title}，${label(WORK_STATE, u.work_state).text}${data.executing ? '，正在执行' : ''}`}
     >
       <Handle type="target" position={Position.Top} />
@@ -63,7 +60,7 @@ function useGraph(m: Model, hidden: Set<string>, viewing: string | null) {
       .filter((u) => !hidden.has(u.branch_id))
       .map((u) => ({
         id: u.id, type: 'unit', position: { x: 0, y: 0 }, width: NODE_W, height: NODE_H,
-        data: { unit: u, onPath: path.has(u.id), viewing: viewing === u.id, executing: !!runningSessionFor(m, u.id) } satisfies UnitNodeData,
+        data: { unit: u, onPath: path.has(u.id), viewing: viewing === u.id, executing: !!runningSessionFor(m, u.id), color: routeColor(m, u.branch_id) } satisfies UnitNodeData,
       }));
     for (const b of m.branches.filter((x) => hidden.has(x.id))) {
       nodes.push({ id: `collapsed:${b.id}`, type: 'collapsed', position: { x: 0, y: 0 }, width: NODE_W, height: 70, data: { name: branchShort(m, b.id), count: m.units.filter((u) => u.branch_id === b.id).length, onExpand: () => {} } });
@@ -80,7 +77,7 @@ function useGraph(m: Model, hidden: Set<string>, viewing: string | null) {
       if (!s || !t || s === t || seen.has(`${s}>${t}`)) continue;
       seen.add(`${s}>${t}`);
       const onPath = path.has(g.source_id) && path.has(g.target_id);
-      edges.push({ id: g.id, source: s, target: t, type: 'smoothstep', markerEnd: { type: MarkerType.ArrowClosed }, style: { strokeWidth: onPath ? 2.5 : 1.5, stroke: routeColor(g.branch_id ?? '') } });
+      edges.push({ id: g.id, source: s, target: t, type: 'smoothstep', markerEnd: { type: MarkerType.ArrowClosed }, style: { strokeWidth: onPath ? 2.5 : 1.5, stroke: routeColor(m, g.branch_id ?? '') } });
     }
     for (const g of m.edges.filter((e) => e.relation === 'uses' && e.target_id.startsWith('evd_'))) {
       const user = m.units.find((u) => u.id === g.source_id);
@@ -205,18 +202,14 @@ function Canvas({ m, hidden, setHidden }: { m: Model; hidden: Set<string>; setHi
 
 function ListView({ m }: { m: Model }) {
   const { setViewingUnitId } = useStore();
-  const lineage = m.edges.filter((e) => e.relation === 'continues_to' && e.state === 'active');
-  const depth = (id: string): number => {
-    const p = lineage.find((e) => e.target_id === id);
-    return p ? depth(p.source_id) + 1 : 0;
-  };
-  const order = (branchId: string) => m.units.filter((u) => u.branch_id === branchId).sort((a, b) => depth(a.id) - depth(b.id));
+  // 有多个上级时取最深的一条，保证每个单元都排在它的所有来源之后
+  const order = (branchId: string) => m.units.filter((u) => u.branch_id === branchId).sort((a, b) => unitDepth(m, a.id) - unitDepth(m, b.id));
   return (
     <div style={{ maxWidth: 820 }}>
       {m.branches.map((b) => (
         <section key={b.id} style={{ marginBottom: 24 }}>
           <div className="row" style={{ marginBottom: 8 }}>
-            <span className="swatch" style={{ background: routeColor(b.id) }} aria-hidden="true" />
+            <span className="swatch" style={{ background: routeColor(m, b.id) }} aria-hidden="true" />
             <h2 style={{ fontSize: '1rem' }}>{b.name}</h2>
           </div>
           <div className="rows">
@@ -280,7 +273,7 @@ export function MapView({ route, listMode = false }: { route: Route; listMode?: 
                       setHidden(next);
                     }}
                   />
-                  <span className="swatch" style={{ background: routeColor(b.id) }} aria-hidden="true" />
+                  <span className="swatch" style={{ background: routeColor(m, b.id) }} aria-hidden="true" />
                   {branchShort(m, b.id)}
                 </label>
               );

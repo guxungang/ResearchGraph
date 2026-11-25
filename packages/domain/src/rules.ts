@@ -21,22 +21,76 @@ export interface GrantLike {
   application_policy: string;
 }
 
-/** 授权是否覆盖某个动作与目标。过期、撤销的授权永不覆盖（不变量：旧快照或历史消息不能重新激活授权）。 */
-export function grantCovers(
-  grant: GrantLike,
-  action: string,
-  target: { unitId?: string; branchId?: string; proposalId?: string; proposalRevision?: number },
-  now: string,
-): { ok: true } | { ok: false; reason: string } {
+export interface GrantTarget {
+  projectId: string;
+  unitId?: string;
+  branchId?: string;
+  proposalId?: string;
+  proposalRevision?: number;
+}
+
+export interface GrantActor {
+  principal_id: string;
+  kind: PrincipalKind;
+}
+
+/**
+ * 授权是否覆盖“某个执行者”对“某个目标”做“某个动作”。依次检查：状态与期限、执行者身份、项目、动作、范围、应用策略。
+ * 过期、撤销的授权永不覆盖（不变量：旧快照或历史消息不能重新激活授权）。任何授权都不让模型应用变更（合同：应用策略说明）。
+ */
+export function grantCovers(grant: GrantLike, action: string, target: GrantTarget, actor: GrantActor, now: string): { ok: true } | { ok: false; reason: string } {
   if (grant.status !== 'active') return { ok: false, reason: `授权 ${grant.id} 状态为 ${grant.status === 'expired' ? '已过期' : '已撤销'}，不能用于新的动作。` };
   if (grant.expires_at && grant.expires_at <= now) return { ok: false, reason: `授权 ${grant.id} 已于 ${grant.expires_at} 到期。` };
-  if (!grant.actions.includes(action)) return { ok: false, reason: `授权 ${grant.id} 不包含动作 ${action}。` };
+  if (actor.kind === 'agent') return { ok: false, reason: '模型不能凭任何授权应用变更。' };
+  if (!grant.subject_principal_ids.includes(actor.principal_id)) return { ok: false, reason: `授权 ${grant.id} 不是授予 ${actor.principal_id} 的。` };
   const s = grant.scope;
+  if (s.project_id !== target.projectId) return { ok: false, reason: `授权 ${grant.id} 属于项目 ${s.project_id}，不能用于项目 ${target.projectId}。` };
+  if (!grant.actions.includes(action)) return { ok: false, reason: `授权 ${grant.id} 不包含动作 ${action}。` };
   if (s.kind === 'units' && !(target.unitId && s.unit_ids?.includes(target.unitId))) return { ok: false, reason: `授权 ${grant.id} 只覆盖单元 ${s.unit_ids?.join('、')}。` };
   if (s.kind === 'branches' && !(target.branchId && s.branch_ids?.includes(target.branchId))) return { ok: false, reason: `授权 ${grant.id} 只覆盖分支 ${s.branch_ids?.join('、')}。` };
   if (s.kind === 'proposal' && !(target.proposalId === s.proposal_id && target.proposalRevision === s.proposal_revision))
     return { ok: false, reason: `授权 ${grant.id} 只覆盖提案 ${s.proposal_id} 第${s.proposal_revision}版。` };
+  if (grant.application_policy === 'human_only' && actor.kind !== 'human') return { ok: false, reason: `授权 ${grant.id} 只能由人亲自使用。` };
+  if (grant.application_policy === 'policy_exact_proposal' && s.kind !== 'proposal') return { ok: false, reason: `授权 ${grant.id} 要求绑定一个具体的提案版本。` };
   return { ok: true };
+}
+
+/** 候选依据的对象修订必须仍是当前修订；任何一项已更新都整体拒绝，不部分应用（方案 §14.4）。 */
+export function checkProposalPremises(refs: { entity_id: string; revision: number }[], currentRevision: (id: string) => number | undefined): ServiceError | null {
+  const changed = refs
+    .map((r) => ({ ...r, current: currentRevision(r.entity_id) }))
+    .filter((r) => r.current !== r.revision);
+  if (!changed.length) return null;
+  return {
+    status: 409,
+    code: 'revision_conflict',
+    message: `候选依据的内容已经变化：${changed.map((r) => (r.current === undefined ? `${r.entity_id} 已不存在` : `${r.entity_id} 从第${r.revision}版变为第${r.current}版`)).join('；')}。`,
+    recovery: '候选不会被应用。请按当前内容重新生成或重新判断。',
+  };
+}
+
+/**
+ * 审阅的当前性。同一审阅者、同一对象、同一修订、同一类审阅中，只有最新的一条是当前审阅；更早的保留为历史（被更正）。
+ * 对象产生新修订后，旧修订上的审阅都不再是当前审阅（AC-021）。
+ */
+export function reviewCurrency<R extends { id: string; target_id: string; reviewed_revision: number; review_kind: string; created_at: string; reviewer: { principal_id: string } }>(
+  reviews: R[],
+  currentRevision: (id: string) => number | undefined,
+): Map<string, { is_current: boolean; superseded_by: string | null }> {
+  const out = new Map<string, { is_current: boolean; superseded_by: string | null }>();
+  const latest = new Map<string, R>();
+  const key = (r: R) => [r.target_id, r.reviewed_revision, r.reviewer.principal_id, r.review_kind].join('|');
+  for (const r of reviews) {
+    const k = key(r);
+    const cur = latest.get(k);
+    if (!cur || r.created_at > cur.created_at || (r.created_at === cur.created_at && r.id > cur.id)) latest.set(k, r);
+  }
+  for (const r of reviews) {
+    const newest = latest.get(key(r))!;
+    const supersededBy = newest.id === r.id ? null : newest.id;
+    out.set(r.id, { is_current: supersededBy === null && currentRevision(r.target_id) === r.reviewed_revision, superseded_by: supersededBy });
+  }
+  return out;
 }
 
 /** HTTP apply 只允许人类（AC-001、AC-041）。 */

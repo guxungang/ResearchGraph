@@ -5,12 +5,12 @@ import type { Claim, ContextBundle, Decision, Evidence, ReadingBrief, ResearchUn
 import { DECISION, OBSERVATION, PRECISION, REVIEW, SESSION_STATE, UNDERSTANDING, WORK_STATE } from '@rw/domain';
 import { useStore } from '../data/store.tsx';
 import { get, reviewsFor, runningSessionFor, staleRefs, unitBrief, type Model } from '../data/model.ts';
-import { fmtTime, versionText } from '../data/format.ts';
+import { buildHandoff } from '../data/derive.ts';
+import { branchShort, displayName, fmtTime, kindName, versionText } from '../data/format.ts';
 import { setQuery, type Route } from '../router.ts';
 import { briefFeedback, interruptSession, markUnderstanding, recordReview, reviseNextAction, startWorkHere } from '../data/service.ts';
-import { Badge, Drawer, Empty, Ref, ReliabilityChart, RichText, Tabs, TermScope, useTerms } from '../components/ui.tsx';
+import { Badge, Drawer, Empty, ReasonForm, Ref, ReliabilityChart, RichText, Tabs, TermScope, useTerms } from '../components/ui.tsx';
 import { ClaimRow, EvidenceRow, RunRow } from '../components/evidence.tsx';
-import { branchShort } from './MapView.tsx';
 
 type Tab = 'brief' | 'method' | 'evidence' | 'history';
 const TABS: { id: Tab; label: string }[] = [
@@ -136,8 +136,22 @@ function BriefTab({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: Re
           </>
         ) : null}
         <p className="small muted" style={{ marginTop: 16 }}>
-          说明{versionText(brief.revision)} · {brief.generation.mode === 'human' ? '人工撰写' : '自动生成'} · {fmtTime(brief.generation.generated_at)} · 依据 {brief.source_revision_refs.length} 个对象的指定版本
+          说明{versionText(brief.revision)} · {({ human: '人工撰写', template: '按模板自动整理（没有新的分析）', model: '模型生成' } as Record<string, string>)[brief.generation.mode]} · {fmtTime(brief.generation.generated_at)}
         </p>
+        <details style={{ marginTop: 6 }}>
+          <summary className="small">这份说明依据的 {brief.source_revision_refs.length - 1} 个对象（写作时的版本）</summary>
+          <ul className="small">
+            {brief.source_revision_refs.filter((r) => r.entity_id !== m.project.id).map((r) => {
+              const cur = m.byId.get(r.entity_id)?.revision;
+              return (
+                <li key={r.entity_id}>
+                  {kindName(r.entity_id)} <Ref id={r.entity_id} version={r.revision} />
+                  {cur !== undefined && cur !== r.revision ? <span className="chip" style={{ marginLeft: 6 }}>现在是{versionText(cur)}</span> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </details>
       </details>
 
       <div className="row" style={{ marginTop: 24, gap: 6 }}>
@@ -301,7 +315,9 @@ function HistoryTab({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: 
             {[...revisions].reverse().map((r) => (
               <li key={r.revision}>
                 <time>{fmtTime(r.updated_at)}</time>
-                <span>{versionText(r.revision)}{r.revision === unit.revision ? '（当前）' : ''} · <Badge table={WORK_STATE} value={r.work_state} /></span>
+                <span>
+                  {r.revision === unit.revision ? <>{versionText(r.revision)}（当前）</> : <a href={`#/at/${unit.id}/${r.revision}`}>{versionText(r.revision)}</a>} · <Badge table={WORK_STATE} value={r.work_state} />
+                </span>
               </li>
             ))}
           </ol>
@@ -315,12 +331,15 @@ function HistoryTab({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: 
             {reviews.map((r) => (
               <div key={r.id} className="rowi">
                 <div className="grow">
-                  <div className="title">{r.target_id.startsWith('brf_') ? '说明' : '本单元'}{versionText(r.reviewed_revision)}</div>
-                  <div className="sub">{fmtTime(r.created_at)}{r.findings[0] ? ` · “${r.findings[0]}”` : ''}</div>
+                  <div className="title">
+                    {r.target_id.startsWith('brf_') ? '说明' : '本单元'}<Ref id={r.target_id} version={r.reviewed_revision}>{versionText(r.reviewed_revision)}</Ref>
+                  </div>
+                  <div className="sub">{fmtTime(r.created_at)}</div>
+                  {r.findings.length ? <div className="small" style={{ marginTop: 4 }}>{r.findings.map((f) => `“${f}”`).join(' ')}</div> : null}
                 </div>
                 {r.status !== 'unreviewed' ? <Badge table={REVIEW} value={r.status} /> : null}
                 {r.understanding_status !== 'not_reported' ? <Badge table={UNDERSTANDING} value={r.understanding_status} /> : null}
-                {r.is_current ? null : <span className="tag">旧版本</span>}
+                {r.superseded_by ? <span className="tag">已被你后来的审阅更正</span> : r.is_current ? null : <span className="tag">针对旧版本</span>}
               </div>
             ))}
           </div>
@@ -385,7 +404,17 @@ function ContextBlock({ m, c }: { m: Model; c: ContextBundle }) {
   return (
     <div className="note-box small">
       <p><strong>{m.ext.display_names[c.id] ?? c.id}</strong> · {fmtTime(c.created_at)} · 约 {c.estimated_tokens} token（估计）。这是给模型的内容，和给你看的说明分开写；只能证明已发送，不能证明模型已理解。</p>
-      <ul>{c.items.map((it, i) => <li key={i}>{it.text}</li>)}</ul>
+      <ul>
+        {c.items.map((it, i) => {
+          const cur = it.entity_id === m.project.id ? undefined : m.byId.get(it.entity_id)?.revision;
+          return (
+            <li key={i}>
+              {it.text}
+              {cur !== undefined && cur !== it.revision ? <span className="chip" style={{ marginLeft: 6 }}>写入时是<Ref id={it.entity_id} version={it.revision}>{versionText(it.revision)}</Ref>，现在是{versionText(cur)}</span> : null}
+            </li>
+          );
+        })}
+      </ul>
       {c.excluded_items.length ? <p className="muted">没有放进去：{c.excluded_items.map((x) => x.reason).join('；')}</p> : null}
     </div>
   );
@@ -396,9 +425,11 @@ function ExecutionCard({ m, unit }: { m: Model; unit: ResearchUnit }) {
   const { run } = useStore();
   const [handoff, setHandoff] = useState(false);
   const session = runningSessionFor(m, unit.id);
+  const worktree = m.worktreeRequests.find((w) => w.branch_id === unit.branch_id);
   return (
     <div className="card">
       <h3>执行</h3>
+      {worktree ? <p className="stale-note" style={{ marginTop: 0 }}>这条路线要求独立代码工作区（{fmtTime(worktree.requested_at)}提出）：尚未创建。样机不能创建工作区。</p> : null}
       {session ? (
         <div className="stack">
           <div className="row"><Badge table={SESSION_STATE} value={session.state} /></div>
@@ -419,6 +450,7 @@ function ExecutionCard({ m, unit }: { m: Model; unit: ResearchUnit }) {
 function ReviewCard({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: ReadingBrief }) {
   const { run } = useStore();
   const [editing, setEditing] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [text, setText] = useState(unit.next_action);
   const unitReview = reviewsFor(m, unit.id).find((r) => r.is_current && r.status !== 'unreviewed');
   const briefReview = brief ? reviewsFor(m, brief.id).find((r) => r.is_current) : undefined;
@@ -426,10 +458,22 @@ function ReviewCard({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: 
     <div className="card">
       <h3>你的审阅 · {versionText(unit.revision)}</h3>
       <div className="row"><Badge table={REVIEW} value={unitReview?.status ?? 'unreviewed'} /></div>
-      <div className="row" style={{ marginTop: 10, gap: 6 }}>
-        <button type="button" className="sm" onClick={() => run((mm) => recordReview(mm, { targetId: unit.id, status: 'accepted', findings: '' }))}>审阅通过</button>
-        <button type="button" className="sm" onClick={() => run((mm) => recordReview(mm, { targetId: unit.id, status: 'needs_changes', findings: '' }))}>需要修改</button>
-      </div>
+      {unitReview?.status === 'needs_changes' && unitReview.findings.length ? <p className="small" style={{ margin: '6px 0 0' }}>你的意见：“{unitReview.findings.join(' ')}”</p> : null}
+      {asking ? (
+        <ReasonForm
+          label="需要修改什么？"
+          placeholder="例如：结论只适用于测试划分，标题里不要写“改善了可靠性”。"
+          required
+          confirmLabel="提交“需要修改”"
+          onCancel={() => setAsking(false)}
+          onConfirm={(text) => { const r = run((mm) => recordReview(mm, { targetId: unit.id, status: 'needs_changes', findings: text })); if (r.ok) setAsking(false); }}
+        />
+      ) : (
+        <div className="row" style={{ marginTop: 10, gap: 6 }}>
+          <button type="button" className="sm" onClick={() => run((mm) => recordReview(mm, { targetId: unit.id, status: 'accepted', findings: '' }))}>审阅通过</button>
+          <button type="button" className="sm" onClick={() => setAsking(true)}>需要修改…</button>
+        </div>
+      )}
       <span className="btn-note">只针对这个版本；不等于采用方案，也不代表结论成立。</span>
       {brief ? (
         <>
@@ -460,25 +504,21 @@ function ReviewCard({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: 
 
 function HandoffDrawer({ unitId, onClose }: { unitId: string; onClose: () => void }) {
   const { model: m } = useStore();
-  const unit = get<ResearchUnit>(m, unitId)!;
-  const ctx = m.contexts.filter((c) => c.unit_id === unitId).sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0];
-  const brief = unitBrief(m, unitId);
-  const lines = [
-    `# 交接材料：${unit.title}（${versionText(unit.revision)}）`,
-    `项目目标：${m.project.goal}`,
-    ...((m.project.constraints as { text: string }[]).map((c) => `约束：${c.text}`)),
-    `本单元问题：${unit.question}`,
-    ...(ctx ? ctx.items.filter((i) => i.role !== 'goal' && i.role !== 'constraint').map((it) => `- ${it.text}`) : []),
-    ...(!ctx && brief ? [...brief.key_findings.map((f) => `已知：${f}`), ...brief.not_yet_established.map((f) => `尚未证明：${f}`)] : []),
-    `下一步：${unit.next_action}`,
-  ];
-  const text = lines.join('\n');
+  const h = buildHandoff(m, unitId);
   return (
     <Drawer title="交接材料" onClose={onClose}>
       <p className="small">当前连接不能从这里启动会话。请复制下面的内容，粘贴到原来的客户端里继续。没有收到会话回执之前，这里不会显示“已同步”。</p>
+      {h.basedOn ? (
+        <p className="small muted">
+          底稿是 {fmtTime(h.basedOn.created_at)} 交给模型的上下文（当时项目第{h.basedOn.project_revision}版，现在第{m.project.revision}版）。
+          {h.replaced.length ? `其中 ${h.replaced.length} 条内容已经更新，已按当前版本改写：${h.replaced.map((r) => displayName(m, r.entity_id)).join('、')}。` : '其中引用的内容都还是当前版本。'}
+          {h.changesSince.length ? `之后又有 ${h.changesSince.length} 条相关变化，已附在材料里。` : ''}
+        </p>
+      ) : <p className="small muted">这个单元还没有交给模型的上下文，材料按阅读说明和当前状态整理。</p>}
+      {h.briefStale ? <div className="warn-box small">阅读说明写好之后，它依据的内容又更新过。材料里的“已知/尚未证明”可能已经过时，请先核对。</div> : null}
       <label htmlFor="handoff-text" className="sr-only">交接材料</label>
-      <textarea id="handoff-text" readOnly value={text} style={{ minHeight: 280, fontSize: '0.85rem' }} />
-      <button type="button" className="primary" style={{ marginTop: 10 }} onClick={() => navigator.clipboard?.writeText(text)}>复制</button>
+      <textarea id="handoff-text" readOnly value={h.text} style={{ minHeight: 280, fontSize: '0.85rem' }} />
+      <button type="button" className="primary" style={{ marginTop: 10 }} onClick={() => navigator.clipboard?.writeText(h.text)}>复制</button>
     </Drawer>
   );
 }

@@ -15,8 +15,28 @@
     "cap_codex_cli": "Codex CLI 伴随连接的能力清单",
     "cap_claude_import": "Claude Code 档案导入的能力清单",
     "src_codex_cli": "Codex CLI（伴随模式）",
-    "src_claude_export": "Claude Code（档案导入）"
+    "src_claude_export": "Claude Code（档案导入）",
+    "run_baseline_1s": "原方法基线（单一种子）",
+    "run_baseline": "原方法基线（5个种子）",
+    "run_a_diag": "原始概率的可靠性诊断",
+    "run_calib": "校准前后的概率误差",
+    "run_calib_peak": "按时段的概率误差",
+    "run_alloc_v1": "对照实验第一次运行",
+    "run_alloc_v2": "对照实验第二次运行"
   },
+  "short_names": {
+    "brn_main": "路线B（主线）",
+    "brn_a": "路线A",
+    "brn_c": "路线C",
+    "brn_net": "复杂网络（已关闭）"
+  },
+  "evidence_limits": [
+    {
+      "evidence_id": "evd_peak",
+      "claim_id": "clm_calib_all_periods",
+      "note": "晚高峰校准后ECE为0.113，高于全天；但没有校准前的值，不能判断校准在晚高峰是否有改善。它限制了结论的适用范围，不是反证。"
+    }
+  ],
   "one_liners": {
     "dec_start_c": "路线C要检验“简化评分”是否够用。现在开始，会和正在跑的对照实验抢同一块GPU。",
     "pro_add_network": "模型建议加一个时空图神经网络来提高预测精度，但没有给出证据。",
@@ -63,6 +83,16 @@
       "topic": "连接状态的采集范围与最后同步时间",
       "spec_section": "§6.1、§12.3",
       "decision_record": "docs/decisions/0002-prototype-extensions.md"
+    },
+    {
+      "topic": "证据对主张的“限制适用范围”关系",
+      "spec_section": "§4.3",
+      "decision_record": "docs/decisions/0007-route-adjustment-after-review.md"
+    },
+    {
+      "topic": "新建路线时“需要独立工作区”的请求与落实状态",
+      "spec_section": "§4.4",
+      "decision_record": "docs/decisions/0007-route-adjustment-after-review.md"
     }
   ],
   "viewer": {
@@ -74,25 +104,61 @@
   "home": {
     "summary": {
       "question": "车辆位置预测不准时，怎样让更多采集任务按时完成？",
-      "mainline": "主线是路线B：先校准（修正）预测给出的到达概率，再交给原来的分配器。",
+      "mainline": {
+        "text": "主线是路线B：先校准（修正）预测给出的到达概率，再交给原来的分配器。",
+        "basis": [
+          {
+            "entity_id": "dec_route_b",
+            "revision": 1
+          },
+          {
+            "entity_id": "brn_main",
+            "revision": 6
+          }
+        ]
+      },
       "known": {
         "text": "校准后，到达概率更准了",
-        "detail": "测试数据上概率误差从 0.142 降到 0.058。但晚高峰时段仍然不准（0.113）。",
-        "ref": "evd_ece_test"
+        "detail": "测试数据上概率误差从 0.142 降到 0.058。晚高峰校准后误差仍较高（0.113），是否有改善还不知道。",
+        "ref": "evd_ece_test",
+        "basis": [
+          {
+            "entity_id": "evd_ece_test",
+            "revision": 1
+          },
+          {
+            "entity_id": "evd_peak",
+            "revision": 1
+          },
+          {
+            "entity_id": "clm_calib_test",
+            "revision": 2
+          },
+          {
+            "entity_id": "clm_calib_all_periods",
+            "revision": 3
+          }
+        ]
       },
       "unknown": {
         "text": "概率更准，能不能让更多任务按时完成？",
         "detail": "这是路线B成立的前提，目前还没有证据。论文草稿已经写了“显著提高”，需要先改掉。",
-        "ref": "clm_completion"
-      },
-      "doing": {
-        "text": "对照实验：原始概率 vs 校准后概率",
-        "ref": "unt_alloc_exp"
+        "ref": "clm_completion",
+        "basis": [
+          {
+            "entity_id": "clm_completion",
+            "revision": 1
+          },
+          {
+            "entity_id": "clm_paper_s4",
+            "revision": 1
+          }
+        ]
       }
     },
     "brief_paragraphs": [
       "本项目研究：车辆位置预测有误差时，怎样提高移动群智感知任务的完成率。平台把“到某个区域采集信息”的任务分给行驶中的车辆；分配器依据每辆车按时到达的概率选车，而这些概率来自有误差的预测。",
-      "当前主线是路线B：先用温度缩放修正到达概率，再交给原有分配器，分配器本身不改。已经知道的是：校准让测试数据上的概率更可靠（期望校准误差从0.142降到0.058），但晚高峰时段仍明显偏离。"
+      "当前主线是路线B：先用温度缩放修正到达概率，再交给原有分配器，分配器本身不改。已经知道的是：校准让测试数据上的概率更可靠（期望校准误差从0.142降到0.058），晚高峰时段校准后误差仍较高，但缺少校准前的值，还不知道校准在晚高峰是否有改善。"
     ],
     "changes_since_last_visit": [
       {
@@ -204,7 +270,11 @@
       "suggested_action": "在决策中心选择开展时机。",
       "priority": 1,
       "priority_reason": "影响当前主线的计算资源安排，且路线C在你选择之前无法开始。",
-      "target": "#/decisions?focus=dec_start_c"
+      "target": "#/decisions?focus=dec_start_c",
+      "open_while": {
+        "kind": "decision_pending",
+        "decision_id": "dec_start_c"
+      }
     },
     {
       "id": "att_paper_gap",
@@ -224,7 +294,11 @@
       "suggested_action": "对照实验出结果前，把该句改为“校准降低了测试划分上的概率误差；对任务完成率的影响正在检验”。",
       "priority": 2,
       "priority_reason": "证据严重程度高：论文陈述超出了已有证据。",
-      "target": "#/evidence?focus=clm_paper_s4"
+      "target": "#/evidence?focus=clm_paper_s4",
+      "open_while": {
+        "kind": "claim_without_evidence",
+        "claim_id": "clm_paper_s4"
+      }
     },
     {
       "id": "att_drift_net",
@@ -244,13 +318,17 @@
       "suggested_action": "查看关闭理由后拒绝或暂缓该建议。",
       "priority": 3,
       "priority_reason": "影响主线目标：若采纳会把重心从对照实验转向模型开发。",
-      "target": "#/decisions?focus=pro_add_network"
+      "target": "#/decisions?focus=pro_add_network",
+      "open_while": {
+        "kind": "proposal_open",
+        "proposal_id": "pro_add_network"
+      }
     },
     {
       "id": "att_review_calib",
       "kind": "review",
       "title": "有一个新版本待审阅",
-      "basis": "你11月2日审阅通过的是第2版；11月18日加入晚高峰反证后形成第3版。新修订不继承旧审阅。",
+      "basis": "你11月2日审阅通过的是第2版；11月18日加入晚高峰的按时段结果后形成第3版。新修订不继承旧审阅。",
       "refs": [
         "unt_calib_exp",
         "rev_calib_exp"
@@ -258,12 +336,16 @@
       "affected": [
         "unt_calib_exp"
       ],
-      "short": "校准实验加入晚高峰反证后的第3版，还没审阅",
+      "short": "校准实验加入晚高峰结果后的第3版，还没审阅",
       "action_label": "去审阅",
       "suggested_action": "打开单元的“历史与版本”查看两版差异。",
       "priority": 4,
       "priority_reason": "不阻塞当前工作。",
-      "target": "#/unit/unt_calib_exp?tab=history"
+      "target": "#/unit/unt_calib_exp?tab=history",
+      "open_while": {
+        "kind": "review_needed",
+        "target_id": "unt_calib_exp"
+      }
     },
     {
       "id": "att_raw_data",
@@ -283,7 +365,11 @@
       "suggested_action": "需要复现旧实验时，先把数据复制到本地并登记内容摘要。",
       "priority": 5,
       "priority_reason": "只影响复现，不影响当前运行。",
-      "target": "#/evidence?tab=artifacts&focus=art_raw_trajectories"
+      "target": "#/evidence?tab=artifacts&focus=art_raw_trajectories",
+      "open_while": {
+        "kind": "artifact_not_local",
+        "artifact_version_id": "art_raw_trajectories"
+      }
     },
     {
       "id": "att_capability",
@@ -302,7 +388,12 @@
       "suggested_action": "需要停止时，请在原客户端中操作。",
       "priority": 6,
       "priority_reason": "提示性信息。",
-      "target": "#/connections"
+      "target": "#/connections",
+      "open_while": {
+        "kind": "capability_missing",
+        "capability_id": "cap_codex_cli",
+        "capability": "interruptTurn"
+      }
     }
   ],
   "glossary": [
@@ -1212,7 +1303,7 @@
       "example": "例如：校准前，“预测八到九成”的那一组实际只有六成多到达；校准后，同一组车辆的概率被调低到七成左右，实际到达比例也约为七成，两者对上了。",
       "change_basis": [
         {
-          "text": "第3版把结束依据从“完成条件已满足”改为“有限制地结束”，因为11月18日按时段检查发现晚高峰仍偏离。",
+          "text": "第3版把结束依据从“完成条件已满足”改为“有限制地结束”，因为11月18日按时段检查发现晚高峰校准后误差仍偏高，而且缺少校准前的值。",
           "refs": [
             "evd_peak",
             "clm_calib_all_periods"
@@ -1547,7 +1638,7 @@
       "example": "例如：两辆车距离相近、时限都够，但甲的到达概率0.8、乙0.5。完整评分会因为可靠性项偏向甲；简化评分只看距离和时限，可能选中乙。路线C要看这种差别累积起来会不会影响完成率。",
       "change_basis": [
         {
-          "text": "从快照 ckp_calib（11月2日）继续，并自动带上快照之后发现的晚高峰反证 evd_peak。",
+          "text": "从快照 ckp_calib（11月2日）继续，并自动带上快照之后发现的晚高峰限制 evd_peak。",
           "refs": [
             "ckp_calib",
             "evd_peak"
@@ -1662,7 +1753,7 @@
       ]
     },
     "brn_c": {
-      "status_note": "待开始：等待决定 dec_start_c。从快照 ckp_calib 继续，已带上之后发现的晚高峰反证。",
+      "status_note": "待开始：等待决定 dec_start_c。从快照 ckp_calib 继续，已带上之后发现的晚高峰限制。",
       "resume_condition": null,
       "reusable_findings": []
     }
@@ -1682,6 +1773,24 @@
     "routes": [
       {
         "branch_id": "brn_a",
+        "basis": [
+          {
+            "entity_id": "brn_a",
+            "revision": 2
+          },
+          {
+            "entity_id": "evd_baseline_completion",
+            "revision": 1
+          },
+          {
+            "entity_id": "evd_reliability_a",
+            "revision": 1
+          },
+          {
+            "entity_id": "dec_route_b",
+            "revision": 1
+          }
+        ],
         "label": "路线A：直接使用概率",
         "card": {
           "aim": "直接用模型给的到达概率分配任务",
@@ -1734,11 +1843,33 @@
       },
       {
         "branch_id": "brn_main",
+        "basis": [
+          {
+            "entity_id": "brn_main",
+            "revision": 6
+          },
+          {
+            "entity_id": "evd_ece_test",
+            "revision": 1
+          },
+          {
+            "entity_id": "evd_peak",
+            "revision": 1
+          },
+          {
+            "entity_id": "dec_route_b",
+            "revision": 1
+          },
+          {
+            "entity_id": "clm_completion",
+            "revision": 1
+          }
+        ],
         "label": "路线B：先校准再分配（主线）",
         "card": {
           "aim": "先校准概率，再交给同一个分配器",
           "evidence_for": "校准后概率误差 0.142 → 0.058",
-          "evidence_against": "晚高峰仍不准（0.113）",
+          "evidence_against": "晚高峰校准后误差仍偏高（0.113），缺少校准前的值",
           "completion": null,
           "cost": "低",
           "status": "主线，实验进行中"
@@ -1761,7 +1892,7 @@
             ]
           },
           "counter": {
-            "text": "晚高峰校准后ECE仍为0.113。",
+            "text": "没有直接反证。晚高峰校准后ECE为0.113，高于全天，但缺少校准前的值，只能限制结论范围。",
             "refs": [
               "evd_peak"
             ]
@@ -1790,6 +1921,20 @@
       },
       {
         "branch_id": "brn_c",
+        "basis": [
+          {
+            "entity_id": "brn_c",
+            "revision": 1
+          },
+          {
+            "entity_id": "clm_weight_needed",
+            "revision": 1
+          },
+          {
+            "entity_id": "dec_start_c",
+            "revision": 1
+          }
+        ],
         "label": "路线C：简化分配评分",
         "card": {
           "aim": "去掉评分里的可靠性项，看是否一样好",
@@ -1834,6 +1979,20 @@
       },
       {
         "branch_id": "brn_net",
+        "basis": [
+          {
+            "entity_id": "brn_net",
+            "revision": 2
+          },
+          {
+            "entity_id": "evd_failure_analysis",
+            "revision": 1
+          },
+          {
+            "entity_id": "dec_no_network",
+            "revision": 1
+          }
+        ],
         "label": "备选：复杂预测网络（已关闭）",
         "card": {
           "aim": "换更复杂的网络，提高位置预测精度",

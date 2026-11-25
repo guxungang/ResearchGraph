@@ -2,15 +2,15 @@
 import type { Claim, Evidence, ExperimentRun } from '@rw/contracts';
 import { ASSESSMENT, AVAILABILITY, CAPTURE, CURRENCY, RUN_STATE, VERIFICATION } from '@rw/domain';
 import type { Model } from '../data/model.ts';
-import { fmtTime, RUN_NAMES } from '../data/format.ts';
+import { displayName, fmtTime } from '../data/format.ts';
+import { claimEvidence, evidenceClaims, ROLE_TEXT } from '../data/derive.ts';
 import { Badge, Locator, Ref, RichText } from './ui.tsx';
 
 const CLAIM_KIND: Record<string, string> = { hypothesis: '假设', finding: '发现', assumption: '前提', paper_claim: '论文陈述' };
 
 export function ClaimRow({ m, claim, open = false }: { m: Model; claim: Claim; open?: boolean }) {
-  const edges = m.edges.filter((e) => e.target_id === claim.id && (e.relation === 'supports' || e.relation === 'contradicts'));
-  const sup = edges.filter((e) => e.relation === 'supports');
-  const con = edges.filter((e) => e.relation === 'contradicts');
+  const { supports: sup, contradicts: con, limits } = claimEvidence(m, claim);
+  const edges = [...sup, ...con];
   const noEvidencePaper = claim.claim_kind === 'paper_claim' && !claim.evidence_ids.length;
   return (
     <details className="rowd" open={open} id={`focus-${claim.id}`}>
@@ -18,20 +18,27 @@ export function ClaimRow({ m, claim, open = false }: { m: Model; claim: Claim; o
         <span className="grow">
           <span className="title" style={{ fontWeight: 550 }}>{claim.text}</span>
           <span className="sub" style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-3)' }}>
-            {CLAIM_KIND[claim.claim_kind]} · 支持 {sup.length} · 反证 {con.length}
+            {CLAIM_KIND[claim.claim_kind]} · 支持 {sup.length} · 反证 {con.length}{limits.length ? ` · 限制 ${limits.length}` : ''}
           </span>
         </span>
         {noEvidencePaper ? <span className="chip strong-red">缺少证据</span> : <Badge table={ASSESSMENT} value={claim.assessment} />}
       </summary>
       <div className="rowd-body">
         <p className="small"><span className="label">适用条件　</span><RichText text={claim.conditions} compact /></p>
-        {edges.length ? (
+        {edges.length || limits.length ? (
           <ul className="small" style={{ paddingLeft: '1.1em' }}>
             {edges.map((e) => (
               <li key={e.id}>
                 <span className={`chip ${e.relation === 'contradicts' ? 'strong-amber' : ''}`} style={{ marginRight: 6 }}>{e.relation === 'supports' ? '支持' : '反证'}</span>
-                <Ref id={e.source_id} />
+                <Ref id={e.source_id} version={e.source_revision} />
                 {e.currency !== 'current' ? <> · <Badge table={CURRENCY} value={e.currency} /></> : null}
+              </li>
+            ))}
+            {limits.map((l) => (
+              <li key={l.evidence_id}>
+                <span className="chip" style={{ marginRight: 6 }}>限制</span>
+                <Ref id={l.evidence_id} />
+                <div className="muted">{l.note}</div>
               </li>
             ))}
           </ul>
@@ -66,11 +73,11 @@ export function EvidenceRow({ m, e, open = false }: { m: Model; e: Evidence; ope
   );
 }
 
-export const runName = (_m: Model, run: ExperimentRun) => RUN_NAMES[run.id] ?? run.id;
+export const runName = (m: Model, run: ExperimentRun) => displayName(m, run.id);
 
 export function RunRow({ m, run, open = false }: { m: Model; run: ExperimentRun; open?: boolean }) {
   const evs = m.evidence.filter((e) => e.experiment_run_id === run.id);
-  const rels = m.edges.filter((g) => evs.some((e) => e.id === g.source_id) && (g.relation === 'supports' || g.relation === 'contradicts'));
+  const rels = evidenceClaims(m, evs.map((e) => e.id));
   return (
     <details className="rowd" open={open} id={`focus-${run.id}`}>
       <summary>
@@ -89,7 +96,7 @@ export function RunRow({ m, run, open = false }: { m: Model; run: ExperimentRun;
           <dt>环境</dt><dd>{run.environment_artifact_version_id ? <Ref id={run.environment_artifact_version_id} /> : <span className="muted">缺失</span>}</dd>
           <dt>随机种子</dt><dd>{run.random_seeds.length ? run.random_seeds.join('、') : '无'}</dd>
           <dt>记录完整性</dt><dd><Badge table={CAPTURE} value={run.capture_completeness} />{run.missing_fields.length ? <span className="muted">　缺：{run.missing_fields.join('、')}</span> : null}</dd>
-          <dt>关联主张</dt><dd>{rels.length ? rels.map((g, i) => <span key={g.id}>{i ? '；' : ''}{g.relation === 'supports' ? '支持' : '挑战'} <Ref id={g.target_id} /></span>) : '无'}</dd>
+          <dt>关联主张</dt><dd>{rels.length ? rels.map((g, i) => <span key={`${g.evidence_id}-${g.claim_id}`}>{i ? '；' : ''}{ROLE_TEXT[g.role]} <Ref id={g.claim_id} /></span>) : '无'}</dd>
         </dl>
         {run.metrics.length ? (
           <div className="table-wrap" style={{ marginTop: 8 }}>

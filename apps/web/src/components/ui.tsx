@@ -22,16 +22,17 @@ export function Badge({ table, value, prefix, title }: { table: Record<string, S
 }
 
 // ---------------------------------------------------------------- 对象链接：显示名称，ID放在提示中
+/** 给出 version 时链接到那个精确版本；它已不是当前版本时，打开的是历史版本页，而不是改过的新版本。 */
 export function Ref({ id, version, children }: { id: string; version?: number; children?: ReactNode }) {
   const m = useModel();
-  const href = hrefFor(m, id);
+  const href = hrefFor(m, id, version);
   const exists = m.byId.has(id) || id.startsWith('cst_') || id.startsWith('src_');
   const text = children ?? displayName(m, id);
   const title = `${kindName(id)} · ${id}${version ? ` · ${versionText(version)}` : ''}${exists ? '' : ' · 未找到该对象'}`;
   const content = (
     <>
       {text}
-      {version ? <span className="muted">（{versionText(version)}）</span> : null}
+      {version && children === undefined && m.byId.get(id)?.revision !== version ? <span className="muted">（{versionText(version)}）</span> : null}
     </>
   );
   if (!exists) return <span className="ref missing" title={title}>{content}</span>;
@@ -193,6 +194,32 @@ export function Drawer({ title, onClose, children }: { title: string; onClose: (
       </div>
       {children}
     </aside>
+  );
+}
+
+// ---------------------------------------------------------------- 理由
+/**
+ * 写理由的小表单。重要的选择留下一句话理由，几个月后才知道当时为什么这样选。
+ * required 为假时可以不写，记录里会如实写“没有填写理由”，不替用户编造。
+ */
+export function ReasonForm({ label: text, placeholder, required = false, confirmLabel, onConfirm, onCancel }: {
+  label: string; placeholder?: string; required?: boolean; confirmLabel: string; onConfirm: (reason: string) => void; onCancel: () => void;
+}) {
+  const [value, setValue] = useState('');
+  const id = useRef(`reason-${Math.random().toString(36).slice(2, 8)}`).current;
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => ref.current?.focus(), []);
+  const blocked = required && !value.trim();
+  return (
+    <div className="reason-form">
+      <label htmlFor={id} className="small">{text}{required ? '' : '（可以不写，但建议写一句）'}</label>
+      <textarea id={id} ref={ref} value={value} placeholder={placeholder} onChange={(e) => setValue(e.target.value)} rows={3} />
+      <div className="row" style={{ gap: 6 }}>
+        <button type="button" className="sm primary" disabled={blocked} onClick={() => onConfirm(value)}>{confirmLabel}</button>
+        <button type="button" className="sm ghost" onClick={onCancel}>取消</button>
+        {blocked ? <span className="small muted">写一句再提交</span> : null}
+      </div>
+    </div>
   );
 }
 

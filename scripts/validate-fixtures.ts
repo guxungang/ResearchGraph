@@ -6,6 +6,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { reviewCurrency } from '../packages/domain/src/rules.ts';
 
 const root = new URL('..', import.meta.url).pathname;
 const read = (p: string) => JSON.parse(readFileSync(join(root, p), 'utf8'));
@@ -85,10 +86,10 @@ for (const d of snap.decisions as E[]) {
   }
   need(d.superseded_by_decision_id, d.id);
 }
+const currency = reviewCurrency(snap.reviews as any[], (id) => byId.get(id)?.revision);
 for (const r of snap.reviews as E[]) {
-  const t = byId.get(r.target_id);
-  if (!t) { problems.push(`${r.id} 目标不存在`); continue; }
-  const current = r.reviewed_revision === t.revision;
+  if (!byId.get(r.target_id)) { problems.push(`${r.id} 目标不存在`); continue; }
+  const current = currency.get(r.id)!.is_current;
   if (current !== r.is_current) problems.push(`${r.id}.is_current 应为 ${current}`);
 }
 for (const s of snap.session_bindings as E[]) { need(s.unit_id, s.id); need(s.branch_id, s.id); need(s.context_bundle_id, s.id); }
@@ -112,6 +113,21 @@ for (const p of snap.proposals as E[]) {
 for (const run of snap.experiment_runs as E[]) { need(run.unit_id, run.id); need(run.config_artifact_version_id, run.id); }
 for (const ev of snap.events as E[]) for (const id of ev.causation_event_ids) if (!(snap.events as E[]).some((x) => x.id === id)) problems.push(`${ev.id} 的因果事件 ${id} 不在节选中`);
 
+// 主张的每条证据都要说明关系：支持、反驳（图关系），或限制适用范围（扩展，合同 v1.1 补上）
+const limits = ext.evidence_limits as { evidence_id: string; claim_id: string; note: string }[];
+for (const c of snap.claims as E[]) {
+  for (const id of c.evidence_ids) {
+    const edge = (snap.graph_edges as E[]).some((g) => g.source_id === id && g.target_id === c.id && (g.relation === 'supports' || g.relation === 'contradicts'));
+    const limit = limits.some((l) => l.evidence_id === id && l.claim_id === c.id);
+    if (!edge && !limit) problems.push(`${c.id} 列出证据 ${id}，但没有说明它是支持、反驳还是限制`);
+    if (edge && limit) problems.push(`${id} 对 ${c.id} 同时记为图关系和限制，含义冲突`);
+  }
+}
+for (const l of limits) {
+  need(l.evidence_id, 'evidence_limits'); need(l.claim_id, 'evidence_limits');
+  if (!(byId.get(l.claim_id)?.evidence_ids ?? []).includes(l.evidence_id)) problems.push(`evidence_limits：${l.claim_id} 的证据列表里没有 ${l.evidence_id}`);
+}
+
 // 扩展数据引用
 const known = (id: string) => has(id) || /^(cst_|act_)/.test(id);
 for (const id of Object.keys(ext.display_names)) if (!known(id) && !id.startsWith('src_')) problems.push(`扩展 display_names 引用不存在的 ${id}`);
@@ -120,6 +136,35 @@ for (const c of ext.home.changes_since_last_visit) c.refs.forEach((r: string) =>
 ext.home.biggest_uncertainty.refs.forEach((r: string) => extRef(r, 'home.uncertainty'));
 ext.home.recent_output_ids.forEach((r: string) => extRef(r, 'home.recent'));
 for (const a of ext.attention_items) [...a.refs, ...a.affected].forEach((r: string) => extRef(r, a.id));
+// 说明依据的版本：对象存在，且是当前修订（夹具里的说明都应是最新写的）
+const checkBasis = (refs: { entity_id: string; revision: number }[], where: string) => {
+  for (const r of refs) {
+    const t = byId.get(r.entity_id);
+    if (!t) problems.push(`${where} 依据不存在的 ${r.entity_id}`);
+    else if (t.revision !== r.revision) problems.push(`${where} 依据 ${r.entity_id}@${r.revision}，当前为 ${t.revision}`);
+  }
+};
+const s = ext.home.summary;
+checkBasis(s.mainline.basis, 'home.mainline'); checkBasis(s.known.basis, 'home.known'); checkBasis(s.unknown.basis, 'home.unknown');
+for (const r of ext.comparison.routes) checkBasis(r.basis, `comparison.${r.branch_id}`);
+for (const id of Object.keys(ext.short_names)) if (!id.startsWith('brn_') || !has(id)) problems.push(`short_names 引用的 ${id} 不是已有路线`);
+// 待关注事项的“仍然成立”条件在夹具中必须为真：夹具里列出的都是当前未处理的事
+for (const a of ext.attention_items) {
+  const c = a.open_while;
+  const ids = Object.entries(c).filter(([k]) => k.endsWith('_id')).map(([, v]) => v as string);
+  ids.forEach((r) => extRef(r, `${a.id}.open_while`));
+  const t = byId.get(ids[0]);
+  if (!t) continue;
+  const open =
+    c.kind === 'decision_pending' ? t.status === 'proposed'
+    : c.kind === 'proposal_open' ? ['candidate', 'ready'].includes(t.status)
+    : c.kind === 'review_needed' ? !(snap.reviews as E[]).some((r) => r.target_id === t.id && r.is_current && r.status !== 'unreviewed')
+    : c.kind === 'claim_without_evidence' ? t.evidence_ids.length === 0 && t.assessment !== 'withdrawn'
+    : c.kind === 'artifact_not_local' ? t.availability !== 'available'
+    : c.kind === 'capability_missing' ? t.capabilities?.[c.capability]?.support !== 'supported'
+    : false;
+  if (!open) problems.push(`${a.id} 的条件 ${c.kind} 在夹具中已不成立，不应列为待关注`);
+}
 for (const g of ext.glossary) { extRef(g.source.entity_id, g.id); (g.scope_branch_ids ?? []).forEach((r: string) => extRef(r, g.id)); }
 for (const [uid, d] of Object.entries<any>(ext.unit_details)) {
   extRef(uid, 'unit_details');

@@ -4,16 +4,17 @@ import { useState } from 'react';
 import type { Decision, Grant, Proposal } from '@rw/contracts';
 import { DECISION, PROPOSAL } from '@rw/domain';
 import { useStore } from '../data/store.tsx';
-import { todo, type Model } from '../data/model.ts';
+import { changesRequested, todo, type Model } from '../data/model.ts';
 import { displayName, fmtTime, versionText } from '../data/format.ts';
 import type { Route } from '../router.ts';
 import { agentApplyAttempt, applyCreateUnitProposal, decide, defer, policyApplyRoutine, rejectProposal, requestInfo, revokeGrant, undefer } from '../data/service.ts';
-import { Badge, Empty, Locator, Ref, RichText, TermScope } from '../components/ui.tsx';
+import { Badge, Empty, Locator, ReasonForm, Ref, RichText, TermScope } from '../components/ui.tsx';
 
 export function DecisionsView({ route }: { route: Route }) {
   const { model: m, run } = useStore();
   const focus = route.query.get('focus');
   const t = todo(m);
+  const waiting = changesRequested(m);
   const deferredIds = Object.keys(m.flags.deferred).filter((id) => m.byId.has(id));
   const decided = m.decisions.filter((d) => d.status !== 'proposed').sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1));
   const handled = m.proposals.filter((p) => p.status !== 'candidate' && p.status !== 'ready');
@@ -63,6 +64,26 @@ export function DecisionsView({ route }: { route: Route }) {
 
         {!t.count ? <Empty>都处理完了。</Empty> : null}
 
+        {waiting.length ? (
+          <section style={{ marginBottom: 36 }}>
+            <div className="section-head"><h2>你要求修改的</h2><span className="hint">在等新版本；新版本出来后会回到“待审阅”</span></div>
+            <div className="rows">
+              {waiting.map((w) => {
+                const unitId = w.id.startsWith('brf_') ? (m.byId.get(w.id)?.unit_id as string) : w.id;
+                return (
+                  <a key={w.id} className="rowi" href={`#/unit/${unitId}?tab=history`}>
+                    <div className="grow">
+                      <div className="title">{w.id.startsWith('brf_') ? `说明：${displayName(m, unitId)}` : displayName(m, w.id)}（{versionText(w.revision)}）</div>
+                      <div className="sub">你的意见：{w.review.findings.length ? `“${w.review.findings.join(' ')}”` : '没有写明'} · {fmtTime(w.review.created_at)}</div>
+                    </div>
+                    <span className="btn sm">去看</span>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
+
         {deferredIds.length ? (
           <details className="more">
             <summary>已暂缓（{deferredIds.length}）</summary>
@@ -90,10 +111,14 @@ export function DecisionsView({ route }: { route: Route }) {
 function DecisionCard({ m, d, highlight }: { m: Model; d: Decision; highlight: boolean }) {
   const { run } = useStore();
   const [info, setInfo] = useState('');
+  const [pending, setPending] = useState<{ optionId: string | null } | null>(null);
   const rec = m.proposals.find((p) => p.status === 'candidate' && p.commands.some((c) => c.kind === 'decide_decision' && (c as { decision_id: string }).decision_id === d.id));
   const recOption = rec ? (rec.commands[0] as { accepted_option_id: string }).accepted_option_id : null;
-  const choose = (optionId: string | null) =>
-    run((mm) => decide(mm, { decisionId: d.id, optionId, reason: optionId ? `研究负责人选择“${d.options.find((o) => o.id === optionId)?.label}”。` : '研究负责人决定不采用。', expectedRevision: mm.project.revision, viaProposalId: optionId && optionId === recOption ? rec?.id : undefined }));
+  const choose = (optionId: string | null, reason: string) => {
+    const r = run((mm) => decide(mm, { decisionId: d.id, optionId, reason, expectedRevision: mm.project.revision, viaProposalId: optionId && optionId === recOption ? rec?.id : undefined }));
+    if (r.ok) setPending(null);
+  };
+  const pendingLabel = pending ? (pending.optionId ? `“${d.options.find((o) => o.id === pending.optionId)?.label}”` : '都不选') : '';
   return (
     <div className={`card ${highlight ? 'hl' : ''}`} id={`focus-${d.id}`}>
       <h3 style={{ fontSize: '1.125rem' }}>{d.question}</h3>
@@ -107,14 +132,24 @@ function DecisionCard({ m, d, highlight }: { m: Model; d: Decision; highlight: b
               </div>
               <div className="small muted">好处：{o.expected_benefit}　代价：<RichText text={o.cost_and_risk.split('；')[0]} compact /></div>
             </div>
-            <button type="button" className="sm" onClick={() => choose(o.id)}>选这个</button>
+            <button type="button" className={`sm ${pending?.optionId === o.id ? 'primary' : ''}`} onClick={() => setPending({ optionId: o.id })}>选这个</button>
           </div>
         ))}
       </div>
-      <div className="row" style={{ marginTop: 14, gap: 4 }}>
-        <button type="button" className="ghost sm" onClick={() => run((mm) => defer(mm, { id: d.id, reason: '暂缓' }))}>暂缓</button>
-        <button type="button" className="ghost sm" onClick={() => choose(null)}>都不选</button>
-      </div>
+      {pending ? (
+        <ReasonForm
+          label={`你选择了${pendingLabel}。为什么？`}
+          placeholder="例如：GPU 要先保证对照实验；等它出结果再开路线C。"
+          confirmLabel="确认选择"
+          onCancel={() => setPending(null)}
+          onConfirm={(reason) => choose(pending.optionId, reason)}
+        />
+      ) : (
+        <div className="row" style={{ marginTop: 14, gap: 4 }}>
+          <button type="button" className="ghost sm" onClick={() => run((mm) => defer(mm, { id: d.id, reason: '暂缓' }))}>暂缓</button>
+          <button type="button" className="ghost sm" onClick={() => setPending({ optionId: null })}>都不选</button>
+        </div>
+      )}
       <details className="more">
         <summary className="small">依据、风险与模型建议的问题</summary>
         <div className="small stack">
@@ -135,6 +170,7 @@ function DecisionCard({ m, d, highlight }: { m: Model; d: Decision; highlight: b
 function ProposalCard({ m, p, highlight }: { m: Model; p: Proposal; highlight: boolean }) {
   const { run } = useStore();
   const [confirm, setConfirm] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const checks = m.ext.rule_checks[p.id] ?? [];
   return (
     <div className={`card ${highlight ? 'hl' : ''}`} id={`focus-${p.id}`}>
@@ -145,11 +181,21 @@ function ProposalCard({ m, p, highlight }: { m: Model; p: Proposal; highlight: b
           {checks.map((c, i) => <div key={i}>⚠ <strong>{c.rule}</strong></div>)}
         </div>
       ) : null}
-      <div className="row" style={{ gap: 6, marginTop: 12 }}>
-        <button type="button" className="sm" onClick={() => run((mm) => rejectProposal(mm, { proposalId: p.id, reason: '研究负责人拒绝' }))}>拒绝</button>
-        <button type="button" className="sm" onClick={() => run((mm) => defer(mm, { id: p.id, reason: '暂缓' }))}>暂缓</button>
-        <button type="button" className="ghost sm" onClick={() => setConfirm(true)}>仍然采用…</button>
-      </div>
+      {rejecting ? (
+        <ReasonForm
+          label="为什么拒绝？"
+          placeholder="例如：这条路线已经关闭过；没有新的失败分解证据之前不再考虑。"
+          confirmLabel="确认拒绝"
+          onCancel={() => setRejecting(false)}
+          onConfirm={(reason) => { const r = run((mm) => rejectProposal(mm, { proposalId: p.id, reason })); if (r.ok) setRejecting(false); }}
+        />
+      ) : (
+        <div className="row" style={{ gap: 6, marginTop: 12 }}>
+          <button type="button" className="sm" onClick={() => setRejecting(true)}>拒绝…</button>
+          <button type="button" className="sm" onClick={() => run((mm) => defer(mm, { id: p.id, reason: '暂缓' }))}>暂缓</button>
+          <button type="button" className="ghost sm" onClick={() => setConfirm(true)}>仍然采用…</button>
+        </div>
+      )}
       {confirm ? (
         <div className="info-box small" role="alertdialog" aria-label="确认采用">
           <p>采用后会在主线上新建一个研究单元。上面的问题会保留在记录里。</p>
@@ -178,6 +224,14 @@ const POLICY: Record<string, string> = { human_only: '只能你本人操作', po
 
 function Records({ m, focus, decided, handled }: { m: Model; focus: string | null; decided: Decision[]; handled: Proposal[] }) {
   const { run } = useStore();
+  const [revoking, setRevoking] = useState<string | null>(null);
+  // 演示用：找一项按范围自动应用的有效授权，以及一个在它范围外的单元
+  const routine = m.grants.find((g) => g.status === 'active' && g.application_policy === 'policy_within_scope' && g.scope.kind === 'units');
+  const scopeUnits: string[] = routine && routine.scope.kind === 'units' ? routine.scope.unit_ids : [];
+  const inScope = m.units.find((u) => scopeUnits.includes(u.id));
+  const outScope = m.units.find((u) => !scopeUnits.includes(u.id) && u.work_state !== 'archived' && u.work_state !== 'finished');
+  /** 你本人只能亲自使用的授权，不在这里撤销（撤销后你将无法再做任何人工操作）。 */
+  const ownCore = (g: Grant) => g.application_policy === 'human_only' && g.subject_principal_ids.includes(m.ext.viewer.principal_id);
   return (
     <div className="stack" style={{ marginTop: 8 }}>
       <h3 style={{ marginTop: 8 }}>已作出的决定</h3>
@@ -189,6 +243,7 @@ function Records({ m, focus, decided, handled }: { m: Model; focus: string | nul
               <div className="grow">
                 <div className="title">{d.question}</div>
                 <div className="sub">{opt ? `选择：${opt.label}` : '未采用'} · {fmtTime(d.accepted_at ?? d.updated_at)}{d.superseded_by_decision_id ? ' · 已被新决定替代，只作历史' : ''}</div>
+                <div className="small" style={{ marginTop: 2 }}>理由：<RichText text={d.rationale} compact /></div>
               </div>
               <Badge table={DECISION} value={d.status} />
             </div>
@@ -205,19 +260,22 @@ function Records({ m, focus, decided, handled }: { m: Model; focus: string | nul
               <div className="grow">
                 <div className="title">{p.title.replace(/^建议：/, '')}</div>
                 <div className="sub">{ev?.actor.kind === 'service' ? `按你的授权自动应用，没有再次询问 · ${fmtTime(ev.at)}` : ev ? `由你采用 · ${fmtTime(ev.at)}` : p.status === 'stale' ? '它依赖的决定已经变了' : ''}</div>
+                {p.status === 'rejected' && p.summary.includes('拒绝理由：') ? <div className="small" style={{ marginTop: 2 }}>拒绝理由：{p.summary.split('拒绝理由：').pop()}</div> : null}
               </div>
               <Badge table={PROPOSAL} value={p.status} />
             </div>
           );
         })}
       </div>
-      <details style={{ marginTop: 4 }}>
-        <summary className="small">试一下：授权范围内外的自动更新</summary>
-        <div className="row" style={{ gap: 6 }}>
-          <button type="button" className="sm" onClick={() => run((mm) => policyApplyRoutine(mm, { grantId: 'grt_routine', unitId: 'unt_alloc_exp', nextAction: `${(mm.byId.get('unt_alloc_exp')?.next_action as string) ?? ''}（演示：结果文件统一命名）` }))}>范围内：更新对照实验</button>
-          <button type="button" className="sm" onClick={() => run((mm) => policyApplyRoutine(mm, { grantId: 'grt_routine', unitId: 'unt_c_weight', nextAction: '演示' }))}>范围外：更新路线C</button>
-        </div>
-      </details>
+      {routine && inScope ? (
+        <details style={{ marginTop: 4 }}>
+          <summary className="small">试一下：授权范围内外的自动更新</summary>
+          <div className="row" style={{ gap: 6 }}>
+            <button type="button" className="sm" onClick={() => run((mm) => policyApplyRoutine(mm, { grantId: routine.id, unitId: inScope.id, nextAction: `${(mm.byId.get(inScope.id)?.next_action as string) ?? ''}（演示：结果文件统一命名）` }))}>范围内：更新“{inScope.title}”</button>
+            {outScope ? <button type="button" className="sm" onClick={() => run((mm) => policyApplyRoutine(mm, { grantId: routine.id, unitId: outScope.id, nextAction: '演示' }))}>范围外：更新“{outScope.title}”</button> : null}
+          </div>
+        </details>
+      ) : null}
 
       <h3 style={{ marginTop: 20 }}>授权</h3>
       <div className="rows">
@@ -228,9 +286,17 @@ function Records({ m, focus, decided, handled }: { m: Model; focus: string | nul
               <div className="sub">{POLICY[g.application_policy]}{g.expires_at ? ` · 到 ${fmtTime(g.expires_at)}` : ''}</div>
             </div>
             <span className="chip"><span className={`dot ${g.status === 'active' ? 'green' : 'gray'}`} aria-hidden="true" />{g.status === 'active' ? '有效' : g.status === 'expired' ? '已过期' : '已撤销'}</span>
-            {g.status === 'active' && g.id !== 'grt_owner_core' ? <button type="button" className="ghost sm" onClick={() => run((mm) => revokeGrant(mm, { grantId: g.id, expectedRevision: mm.project.revision, reason: '研究负责人撤销' }))}>撤销</button> : null}
+            {g.status === 'active' && !ownCore(g) && revoking !== g.id ? <button type="button" className="ghost sm" onClick={() => setRevoking(g.id)}>撤销…</button> : null}
           </div>
         ))}
+        {revoking ? (
+          <ReasonForm
+            label={`撤销“${m.ext.display_names[revoking] ?? revoking}”的理由`}
+            confirmLabel="确认撤销"
+            onCancel={() => setRevoking(null)}
+            onConfirm={(reason) => { const r = run((mm) => revokeGrant(mm, { grantId: revoking, expectedRevision: mm.project.revision, reason })); if (r.ok) setRevoking(null); }}
+          />
+        ) : null}
       </div>
       {m.flags.ruleDemos.length ? (
         <p className="small muted">刚才的演示：{m.flags.ruleDemos.map((d) => `${d.action} → 被拒绝（${d.status}）`).join('；')}</p>
