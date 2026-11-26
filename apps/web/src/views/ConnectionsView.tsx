@@ -18,7 +18,8 @@ export function ConnectionsView() {
     <div className="narrow">
       <div className="page-title">
         <h1>连接</h1>
-        <p>工作台和 Codex、Claude Code 之间实际能做什么。样机没有连接真实工具，下面是虚构的探测结果。</p>
+        <p>工作台和外部工具（例如 Codex、Claude Code）之间实际能做什么。样机没有连接真实工具。</p>
+        {!m.caps.length ? <p className="muted">这个项目没有记录任何连接。</p> : null}
       </div>
       {m.caps.map((c) => {
         const conn = m.ext.connections.find((x) => x.harness_instance_id === c.harness_instance_id);

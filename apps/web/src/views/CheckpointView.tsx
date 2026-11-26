@@ -81,9 +81,9 @@ export function CheckpointView({ id }: { id: string }) {
           </p>
           <div className="stack">
             <label htmlFor="fk-name" className="small">新路线名称</label>
-            <input id="fk-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：路线D 分时段校准" />
+            <input id="fk-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="给新路线起个名字" />
             <label htmlFor="fk-q" className="small">要回答的问题</label>
-            <textarea id="fk-q" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="例如：按时段分别校准，能否降低晚高峰的概率误差？" />
+            <textarea id="fk-q" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="这条路线要回答什么问题？" />
             <label className="row small"><input type="checkbox" checked={worktree} onChange={(e) => setWorktree(e.target.checked)} /> 需要单独的代码目录（样机只记录这个请求，不会真的创建）</label>
             <button type="button" className="primary" style={{ alignSelf: 'flex-start' }} onClick={() => { const r = run((mm) => forkFromCheckpoint(mm, { checkpointId: id, name, question, createWorktree: worktree, expectedRevision: mm.project.revision })); if (r.ok) { setName(''); setQuestion(''); } }}>新建路线</button>
           </div>

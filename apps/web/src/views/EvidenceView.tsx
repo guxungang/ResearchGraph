@@ -88,7 +88,7 @@ export function EvidenceView({ route, forceTab }: { route: Route; forceTab?: Tab
 
           {tab === 'terms' ? (
             <>
-              <p className="small muted">同一个符号可能有不同含义：问题定义里的 T 是任务时限，校准方法里的 T 是温度参数，两者分别列出。</p>
+              <p className="small muted">同一个词或符号在不同地方可能含义不同，术语表会分别列出，不合并。</p>
               <div className="rows">
                 {m.ext.glossary.map((g) => (
                   <details key={g.id} className="rowd" id={`focus-${g.id}`}>

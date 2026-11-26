@@ -15,7 +15,7 @@ import { VersionView } from './views/VersionView.tsx';
 import { TestIndexView, TestMaterialView } from './views/TestViews.tsx';
 
 function Settings() {
-  const { prefs, setPrefs, reset } = useStore();
+  const { prefs, setPrefs, reset, project, projects } = useStore();
   return (
     <details className="no-print" style={{ position: 'relative' }}>
       <summary aria-label="显示设置">设置</summary>
@@ -38,6 +38,14 @@ function Settings() {
               <option value={1.25}>特大</option>
             </select>
           </label>
+          {projects.length > 1 ? (
+            <label className="row spread">
+              项目
+              <select value={project} onChange={(e) => { window.location.search = e.target.value === 'stage-a' ? '' : `?project=${e.target.value}`; }}>
+                {projects.map((p) => <option key={p.name} value={p.name}>{p.label}{p.source === 'local' ? '（本机）' : ''}</option>)}
+              </select>
+            </label>
+          ) : null}
           <a href="#/connections">连接与能力</a>
           <a href="#/test">理解测试材料</a>
           <button type="button" className="sm" onClick={() => window.confirm('清除本机浏览器中的全部模拟操作，回到初始状态？') && reset()}>重置样机</button>
@@ -49,8 +57,9 @@ function Settings() {
 
 export function App() {
   const route = useRoute();
-  const { model: m } = useStore();
+  const { model: m, project, projects } = useStore();
   const [first, second, third] = route.path;
+  const local = projects.find((p) => p.name === project)?.source === 'local';
 
   if (first === 'test' && second && third) return <TermProvider><TestMaterialView unitId={second} condition={third} /><Toasts /></TermProvider>;
 
@@ -83,10 +92,10 @@ export function App() {
   return (
     <TermProvider>
       <a className="skip-link" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById('main')?.focus(); }}>跳到正文</a>
-      <div className="proto-note" role="note">样机 · 全部为虚构数据 · 操作只保存在本机浏览器</div>
+      <div className="proto-note" role="note">{local ? '样机 · 本机项目数据（不在仓库里）· 操作只保存在本机浏览器' : '样机 · 全部为虚构数据 · 操作只保存在本机浏览器'}</div>
       <header className="header">
         <div className="header-inner">
-          <div className="brand">移动群智感知项目</div>
+          <div className="brand" title={m.project.name}>{m.ext.short_names[m.project.id] ?? m.project.name}</div>
           <nav className="nav" aria-label="主导航">
             {nav.map((n) => (
               <a key={n.id} href={n.href} aria-current={section === n.id ? 'page' : undefined}>

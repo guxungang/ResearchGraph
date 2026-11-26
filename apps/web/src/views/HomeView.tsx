@@ -5,7 +5,7 @@ import type { ResearchUnit } from '@rw/contracts';
 import type { RevisionRef } from '@fixtures/src/extension-types.ts';
 import { useStore } from '../data/store.tsx';
 import { changesRequested, get, runningSessionFor, type Model } from '../data/model.ts';
-import { attentionItems, staleBasis } from '../data/derive.ts';
+import { attentionItems, homeSummary, staleBasis } from '../data/derive.ts';
 import { fmtTime, hrefFor } from '../data/format.ts';
 
 const KIND: Record<string, string> = { decision: '待决定', drift: '提醒', evidence_gap: '证据缺口', review: '待审阅', source: '资料', capability: '连接', blocker: '阻塞' };
@@ -19,7 +19,7 @@ function StaleNote({ m, basis }: { m: Model; basis: RevisionRef[] }) {
 export function HomeView() {
   const { model: m } = useStore();
   const ext = m.ext;
-  const s = ext.home.summary;
+  const s = homeSummary(m);
   const doing = get<ResearchUnit>(m, m.project.focus_unit_id);
   const session = doing ? runningSessionFor(m, doing.id) : undefined;
 
@@ -30,7 +30,10 @@ export function HomeView() {
 
   const changes = [
     ...[...m.local].reverse().map((e) => ({ at: e.at, text: e.summary, local: true })),
-    ...[...ext.home.changes_since_last_visit].reverse().map((c) => ({ at: c.at, text: c.short, local: false })),
+    // 项目没有写好的“上次查看后的变化”时，直接列出记录里最近的事件
+    ...(ext.home
+      ? [...ext.home.changes_since_last_visit].reverse().map((c) => ({ at: c.at, text: c.short, local: false }))
+      : m.timeline.filter((t) => !t.local).slice(-6).reverse().map((t) => ({ at: t.at, text: t.summary, local: false }))),
   ];
 
   return (
@@ -42,21 +45,30 @@ export function HomeView() {
           {s.mainline.text} <a href="#/map">查看全部路线</a>
         </p>
         <StaleNote m={m} basis={s.mainline.basis} />
+        {!s.curated ? <p className="small muted" style={{ margin: '6px 0 0' }}>这个项目还没有写好的首页要点，下面的内容由项目当前的记录整理。</p> : null}
 
         <div className="tri">
           <div className="card">
             <div className="label">已经知道</div>
-            <div className="big">{s.known.text}</div>
-            <p className="detail">{s.known.detail}</p>
-            <StaleNote m={m} basis={s.known.basis} />
-            <a href={hrefFor(m, s.known.ref) ?? '#/evidence'}>查看证据 →</a>
+            {s.known ? (
+              <>
+                <div className="big">{s.known.text}</div>
+                <p className="detail">{s.known.detail}</p>
+                <StaleNote m={m} basis={s.known.basis} />
+                <a href={hrefFor(m, s.known.ref) ?? '#/evidence'}>查看证据 →</a>
+              </>
+            ) : <p className="detail">主线上还没有有证据支持的主张。</p>}
           </div>
           <div className="card unknown">
             <div className="label">还不知道 · 最重要</div>
-            <div className="big">{s.unknown.text}</div>
-            <p className="detail">{s.unknown.detail}</p>
-            <StaleNote m={m} basis={s.unknown.basis} />
-            <a href={hrefFor(m, s.unknown.ref) ?? '#/evidence'}>为什么还不知道 →</a>
+            {s.unknown ? (
+              <>
+                <div className="big">{s.unknown.text}</div>
+                <p className="detail">{s.unknown.detail}</p>
+                <StaleNote m={m} basis={s.unknown.basis} />
+                <a href={hrefFor(m, s.unknown.ref) ?? '#/evidence'}>为什么还不知道 →</a>
+              </>
+            ) : <p className="detail">主线上没有记录待检验的主张。</p>}
           </div>
           <div className="card">
             <div className="label">正在做</div>
@@ -122,7 +134,7 @@ export function HomeView() {
 
       <section className="section" aria-labelledby="chg-h">
         <div className="section-head">
-          <h2 id="chg-h">你上次查看（{fmtTime(ext.viewer.last_visit_at)}）之后</h2>
+          <h2 id="chg-h">{ext.viewer && ext.home ? `你上次查看（${fmtTime(ext.viewer.last_visit_at)}）之后` : '最近的变化'}</h2>
         </div>
         <div className="card" style={{ padding: '6px 22px' }}>
           <ol className="timeline">

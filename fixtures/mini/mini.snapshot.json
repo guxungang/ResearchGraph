@@ -1,0 +1,853 @@
+{
+  "schema_version": "1.0.0",
+  "export_kind": "project_snapshot",
+  "exported_at": "2026-11-26T00:00:00Z",
+  "example_notice": "最小虚构项目：全部为虚构，只用于验证界面不依赖特定项目，且在没有扩展数据时照样能用。",
+  "event_history_scope": "excerpt",
+  "last_event_seq": 12,
+  "project": {
+    "id": "prj_review",
+    "revision": 3,
+    "project_id": "prj_review",
+    "created_at": "2026-10-01T02:00:00Z",
+    "updated_at": "2026-10-01T02:00:00Z",
+    "valid_time": {
+      "from": "2026-10-01T02:00:00Z",
+      "to": null
+    },
+    "provenance": {
+      "observation_kind": "observed",
+      "source_refs": [
+        {
+          "kind": "user_action",
+          "precision": "exact",
+          "correlation_method": "direct_id",
+          "content_sha256": null,
+          "captured_at": "2026-10-01T02:00:00Z",
+          "description": "研究负责人的界面操作：建立 prj_review",
+          "action_id": "act_prj_review",
+          "ui_surface": "workbench",
+          "request_id": "req-act_prj_review"
+        }
+      ],
+      "created_by": {
+        "principal_id": "usr_owner",
+        "kind": "human",
+        "authentication_ref": "auth_local_session",
+        "grant_id": "grt_review_owner"
+      },
+      "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+    },
+    "name": "综述写作：位置不确定下的任务分配方法（最小示例）",
+    "goal": "写出一节按方法类别组织、并说明每类方法评价条件的综述，让读者能判断哪些结果可以互相比较。",
+    "problem_statement": "已有文献的评价条件差异很大，直接并列结果会误导读者。",
+    "in_scope": [
+      "文献筛选与分类",
+      "评价条件的整理与对照"
+    ],
+    "out_of_scope": [
+      "复现文献中的实验"
+    ],
+    "constraints": [
+      {
+        "id": "cst_traceable",
+        "text": "综述里的每个结论都要能追溯到具体文献的页码。",
+        "source_ref": {
+          "kind": "user_action",
+          "precision": "exact",
+          "correlation_method": "direct_id",
+          "content_sha256": null,
+          "captured_at": "2026-10-01T02:00:00Z",
+          "description": "研究负责人的界面操作：写入约束",
+          "action_id": "act_setup",
+          "ui_surface": "workbench",
+          "request_id": "req-act_setup"
+        }
+      }
+    ],
+    "main_branch_id": "brn_by_method",
+    "focus_unit_id": "unt_screen",
+    "status": "active",
+    "language": "zh-CN",
+    "timezone": "Asia/Shanghai"
+  },
+  "branches": [
+    {
+      "id": "brn_by_method",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-01T02:00:00Z",
+      "updated_at": "2026-10-01T02:00:00Z",
+      "valid_time": {
+        "from": "2026-10-01T02:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-01T02:00:00Z",
+            "description": "研究负责人的界面操作：建立 brn_by_method",
+            "action_id": "act_brn_by_method",
+            "ui_surface": "workbench",
+            "request_id": "req-act_brn_by_method"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "name": "按方法类别组织",
+      "purpose": "先按方法类别分节，每节说明该类方法的评价条件。",
+      "state": "active",
+      "derived_from_branch_id": null,
+      "base_unit_id": null,
+      "base_checkpoint_id": null,
+      "context_revision": 1,
+      "effective_decision_ids": [],
+      "open_claim_ids": [
+        "clm_eval_gap"
+      ],
+      "closure_reason": null
+    },
+    {
+      "id": "brn_by_scene",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 brn_by_scene",
+            "action_id": "act_brn_by_scene",
+            "ui_surface": "workbench",
+            "request_id": "req-act_brn_by_scene"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "name": "按应用场景组织",
+      "purpose": "按应用场景分节，同一场景下比较不同方法。",
+      "state": "proposed",
+      "derived_from_branch_id": "brn_by_method",
+      "base_unit_id": "unt_scope",
+      "base_checkpoint_id": null,
+      "context_revision": 1,
+      "effective_decision_ids": [],
+      "open_claim_ids": [],
+      "closure_reason": null
+    }
+  ],
+  "research_units": [
+    {
+      "id": "unt_scope",
+      "revision": 2,
+      "project_id": "prj_review",
+      "created_at": "2026-10-01T02:00:00Z",
+      "updated_at": "2026-10-01T02:00:00Z",
+      "valid_time": {
+        "from": "2026-10-01T02:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-01T02:00:00Z",
+            "description": "研究负责人的界面操作：建立 unt_scope",
+            "action_id": "act_unt_scope",
+            "ui_surface": "workbench",
+            "request_id": "req-act_unt_scope"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "branch_id": "brn_by_method",
+      "title": "确定综述范围",
+      "question": "综述只覆盖哪些问题设定？",
+      "purpose": "划定范围，避免把不可比的工作放在一起。",
+      "work_state": "finished",
+      "parent_unit_ids": [],
+      "claim_ids": [],
+      "decision_ids": [],
+      "evidence_ids": [],
+      "artifact_version_ids": [],
+      "acceptance_criteria": [],
+      "blocker": null,
+      "next_action": "无。",
+      "completion": {
+        "kind": "criteria_satisfied",
+        "basis": "范围已写入项目说明。",
+        "evidence_ids": [],
+        "review_ids": [],
+        "completed_at": "2026-10-08T03:00:00Z"
+      },
+      "owner_principal_id": "usr_owner"
+    },
+    {
+      "id": "unt_screen",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-08T03:00:00Z",
+      "updated_at": "2026-10-08T03:00:00Z",
+      "valid_time": {
+        "from": "2026-10-08T03:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-08T03:00:00Z",
+            "description": "研究负责人的界面操作：建立 unt_screen",
+            "action_id": "act_unt_screen",
+            "ui_surface": "workbench",
+            "request_id": "req-act_unt_screen"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "branch_id": "brn_by_method",
+      "title": "筛选文献并记录评价条件",
+      "question": "候选文献分别在什么数据、预算和时限下评价？",
+      "purpose": "为每类方法整理可比较的评价条件。",
+      "work_state": "active",
+      "parent_unit_ids": [
+        "unt_scope"
+      ],
+      "claim_ids": [
+        "clm_assume_exact",
+        "clm_eval_gap"
+      ],
+      "decision_ids": [],
+      "evidence_ids": [
+        "evd_screen"
+      ],
+      "artifact_version_ids": [
+        "art_screen_log"
+      ],
+      "acceptance_criteria": [
+        {
+          "id": "acc_screen",
+          "description": "每篇入选文献都记录数据集、预算、时限和页码。",
+          "required_evidence_kind": "source",
+          "mandatory": true
+        }
+      ],
+      "blocker": null,
+      "next_action": "补完剩余 11 篇文献的评价条件。",
+      "completion": null,
+      "owner_principal_id": "usr_owner"
+    },
+    {
+      "id": "unt_scene_outline",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 unt_scene_outline",
+            "action_id": "act_unt_scene_outline",
+            "ui_surface": "workbench",
+            "request_id": "req-act_unt_scene_outline"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "branch_id": "brn_by_scene",
+      "title": "按场景重排大纲",
+      "question": "按应用场景组织，读者是否更容易比较？",
+      "purpose": "检验另一种组织方式。",
+      "work_state": "planned",
+      "parent_unit_ids": [
+        "unt_scope"
+      ],
+      "claim_ids": [],
+      "decision_ids": [
+        "dec_structure"
+      ],
+      "evidence_ids": [],
+      "artifact_version_ids": [],
+      "acceptance_criteria": [],
+      "blocker": null,
+      "next_action": "等待决定综述按什么组织（dec_structure）。",
+      "completion": null,
+      "owner_principal_id": "usr_owner"
+    }
+  ],
+  "graph_edges": [
+    {
+      "id": "edg_r1",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-08T03:00:00Z",
+      "updated_at": "2026-10-08T03:00:00Z",
+      "valid_time": {
+        "from": "2026-10-08T03:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-08T03:00:00Z",
+            "description": "研究负责人的界面操作：建立 edg_r1",
+            "action_id": "act_edg_r1",
+            "ui_surface": "workbench",
+            "request_id": "req-act_edg_r1"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "source_id": "unt_scope",
+      "target_id": "unt_screen",
+      "relation": "continues_to",
+      "branch_id": "brn_by_method",
+      "rationale": "范围确定后开始筛选。",
+      "state": "active",
+      "source_revision": 2,
+      "target_revision": 1,
+      "binding_semantics": "identity_lineage",
+      "currency": "current"
+    },
+    {
+      "id": "edg_r2",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 edg_r2",
+            "action_id": "act_edg_r2",
+            "ui_surface": "workbench",
+            "request_id": "req-act_edg_r2"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "source_id": "unt_scope",
+      "target_id": "unt_scene_outline",
+      "relation": "continues_to",
+      "branch_id": "brn_by_scene",
+      "rationale": "另一种组织方式。",
+      "state": "active",
+      "source_revision": 2,
+      "target_revision": 1,
+      "binding_semantics": "identity_lineage",
+      "currency": "current"
+    },
+    {
+      "id": "edg_r3",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 edg_r3",
+            "action_id": "act_edg_r3",
+            "ui_surface": "workbench",
+            "request_id": "req-act_edg_r3"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "source_id": "evd_screen",
+      "target_id": "clm_assume_exact",
+      "relation": "supports",
+      "branch_id": null,
+      "rationale": "筛选记录直接给出了比例。",
+      "state": "active",
+      "source_revision": 1,
+      "target_revision": 1,
+      "binding_semantics": "exact_revision",
+      "currency": "current"
+    }
+  ],
+  "claims": [
+    {
+      "id": "clm_assume_exact",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 clm_assume_exact",
+            "action_id": "act_clm_assume_exact",
+            "ui_surface": "workbench",
+            "request_id": "req-act_clm_assume_exact"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "assessed_by_review_ids": [],
+      "supersedes_claim_id": null,
+      "text": "多数候选文献假设车辆位置预测没有误差。",
+      "claim_kind": "finding",
+      "assessment": "supported",
+      "conditions": "只针对本次筛选的 42 篇候选文献；31 篇在方法部分明确这样假设。",
+      "evidence_ids": [
+        "evd_screen"
+      ],
+      "branch_ids": [
+        "brn_by_method"
+      ]
+    },
+    {
+      "id": "clm_eval_gap",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 clm_eval_gap",
+            "action_id": "act_clm_eval_gap",
+            "ui_surface": "workbench",
+            "request_id": "req-act_clm_eval_gap"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "assessed_by_review_ids": [],
+      "supersedes_claim_id": null,
+      "text": "不同方法的结果差异主要来自评价条件不同，而不是方法本身。",
+      "claim_kind": "hypothesis",
+      "assessment": "unassessed",
+      "conditions": "还没有把评价条件整理完，无法判断。",
+      "evidence_ids": [],
+      "branch_ids": [
+        "brn_by_method"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "evd_screen",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 evd_screen",
+            "action_id": "act_evd_screen",
+            "ui_surface": "workbench",
+            "request_id": "req-act_evd_screen"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "title": "筛选记录：42 篇候选文献中 31 篇假设位置无误差",
+      "evidence_kind": "dataset",
+      "statement": "在 42 篇候选文献中，31 篇在方法部分明确假设车辆位置预测没有误差。",
+      "artifact_version_ids": [
+        "art_screen_log"
+      ],
+      "experiment_run_id": null,
+      "scope": "本次检索得到的候选文献。",
+      "limitations": "检索只覆盖两个数据库，可能漏掉会议短文。",
+      "availability": "available",
+      "verification_status": "source_checked",
+      "source_locator": {
+        "kind": "file",
+        "precision": "exact",
+        "correlation_method": "content_hash",
+        "content_sha256": "6f038a865468f164b209ce933aaa7b16586979357b9c6b88c41c89cd45deb1a3",
+        "captured_at": "2026-10-20T05:00:00Z",
+        "description": "筛选表的汇总行",
+        "artifact_version_id": "art_screen_log",
+        "relative_path": "review/screening.csv",
+        "page_number": null,
+        "section": null,
+        "span": null
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "id": "dec_structure",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 dec_structure",
+            "action_id": "act_dec_structure",
+            "ui_surface": "workbench",
+            "request_id": "req-act_dec_structure"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "question": "综述按方法类别组织，还是按应用场景组织？",
+      "options": [
+        {
+          "id": "opt_by_method",
+          "label": "按方法类别",
+          "description": "每节一类方法，节内说明评价条件。",
+          "expected_benefit": "与现有筛选表一致，改动少。",
+          "cost_and_risk": "同一场景的方法分散在不同节。",
+          "evidence_ids": [
+            "evd_screen"
+          ]
+        },
+        {
+          "id": "opt_by_scene",
+          "label": "按应用场景",
+          "description": "每节一个场景，节内比较不同方法。",
+          "expected_benefit": "读者更容易比较同一场景下的方法。",
+          "cost_and_risk": "需要重排大纲，约两天。",
+          "evidence_ids": []
+        }
+      ],
+      "status": "proposed",
+      "accepted_option_id": null,
+      "rationale": "两种组织方式各有利弊，尚未选择。",
+      "evidence_ids": [
+        "evd_screen"
+      ],
+      "branch_ids": [
+        "brn_c",
+        "brn_main"
+      ],
+      "authorized_by_grant_id": null,
+      "acceptance_source": null,
+      "superseded_by_decision_id": null,
+      "reconsider_when": "路线B对照实验出现结果时。",
+      "authorization_grant_revision": null,
+      "accepted_at": null
+    }
+  ],
+  "artifact_versions": [
+    {
+      "id": "art_screen_log",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-20T05:00:00Z",
+      "updated_at": "2026-10-20T05:00:00Z",
+      "valid_time": {
+        "from": "2026-10-20T05:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-20T05:00:00Z",
+            "description": "研究负责人的界面操作：建立 art_screen_log",
+            "action_id": "act_art_screen_log",
+            "ui_surface": "workbench",
+            "request_id": "req-act_art_screen_log"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "logical_artifact_id": "lga_screen_log",
+      "title": "文献筛选表",
+      "media_type": "text/csv",
+      "version_label": "第1版",
+      "storage_ref": {
+        "kind": "local",
+        "location": "review/screening.csv"
+      },
+      "sha256": "6f038a865468f164b209ce933aaa7b16586979357b9c6b88c41c89cd45deb1a3",
+      "byte_size": 4096,
+      "availability": "available",
+      "previous_version_id": null,
+      "produced_by_unit_id": "unt_screen",
+      "version_pinning": "content_verified"
+    }
+  ],
+  "experiment_runs": [],
+  "checkpoints": [],
+  "proposals": [],
+  "reviews": [],
+  "session_bindings": [],
+  "capability_manifests": [],
+  "context_bundles": [],
+  "reading_briefs": [],
+  "grants": [
+    {
+      "id": "grt_review_owner",
+      "revision": 1,
+      "project_id": "prj_review",
+      "created_at": "2026-10-01T02:00:00Z",
+      "updated_at": "2026-10-01T02:00:00Z",
+      "valid_time": {
+        "from": "2026-10-01T02:00:00Z",
+        "to": null
+      },
+      "provenance": {
+        "observation_kind": "observed",
+        "source_refs": [
+          {
+            "kind": "user_action",
+            "precision": "exact",
+            "correlation_method": "direct_id",
+            "content_sha256": null,
+            "captured_at": "2026-10-01T02:00:00Z",
+            "description": "研究负责人的界面操作：建立 grt_review_owner",
+            "action_id": "act_grt_review_owner",
+            "ui_surface": "workbench",
+            "request_id": "req-act_grt_review_owner"
+          }
+        ],
+        "created_by": {
+          "principal_id": "usr_owner",
+          "kind": "human",
+          "authentication_ref": "auth_local_session",
+          "grant_id": "grt_review_owner"
+        },
+        "derivation_note": "最小虚构项目：只用于验证界面不依赖特定项目。"
+      },
+      "status": "active",
+      "subject_principal_ids": [
+        "usr_owner"
+      ],
+      "actions": [
+        "goal.change",
+        "assumption.change",
+        "decision.accept",
+        "decision.reject",
+        "decision.supersede",
+        "branch.promote",
+        "branch.create",
+        "branch.archive",
+        "branch.merge",
+        "unit.create",
+        "unit.update",
+        "unit.revise",
+        "unit.reorganize",
+        "claim.create",
+        "claim.revise",
+        "claim.assess",
+        "evidence.create",
+        "evidence.revise",
+        "evidence.attach",
+        "artifact.register",
+        "graph.link",
+        "graph.correct",
+        "checkpoint.create",
+        "session.start",
+        "session.interrupt",
+        "review.record"
+      ],
+      "scope": {
+        "kind": "project",
+        "project_id": "prj_review"
+      },
+      "issued_by": {
+        "principal_id": "usr_owner",
+        "kind": "human",
+        "authentication_ref": "auth_local_session",
+        "grant_id": null
+      },
+      "authorization_source": {
+        "kind": "user_action",
+        "precision": "exact",
+        "correlation_method": "direct_id",
+        "content_sha256": null,
+        "captured_at": "2026-09-01T02:00:00Z",
+        "description": "研究负责人的界面操作：创建项目时确认人工操作授权",
+        "action_id": "act_create_project",
+        "ui_surface": "project-setup",
+        "request_id": "req-act_create_project"
+      },
+      "expires_at": null,
+      "max_cost_usd": null,
+      "revoked_at": null,
+      "reason": "创建项目时签发给项目负责人的人工操作授权（样机假设，见 D-004）。",
+      "application_policy": "human_only"
+    }
+  ],
+  "events": []
+}

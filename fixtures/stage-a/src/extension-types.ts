@@ -109,6 +109,10 @@ export type DimKey = 'problem' | 'assumptions' | 'support' | 'counter' | 'open' 
 
 export interface Comparison {
   question: string;
+  /** 卡片上那个指标的名称和条件（例如“任务完成率（预算100，5个种子）”）；没有时不显示这一栏。 */
+  card_metric_label?: string;
+  /** 比较页底部的说明（例如哪些数字用的是旧规则、不能和其他数字比较）。 */
+  notes?: string[];
   dimension_labels: Record<DimKey, string>;
   /** dims 中的 null 显示为“未知”。 */
   routes: {
@@ -142,12 +146,16 @@ export interface ReliabilityCurve {
   series: { label: string; points: { predicted: number; observed: number; n: number }[] }[];
 }
 
+/**
+ * 项目的扩展数据（非合同）。viewer、home、comparison 可以没有：新导入的项目通常没有写好的首页要点和路线比较，
+ * 界面会改由项目状态整理。其余字段缺省时按空值处理（见 apps/web/src/data/model.ts 的 normalizeExt）。
+ */
 export interface StageAExtensions {
-  extension_version: '0.1.0-stage-a';
+  extension_version: string;
   notice: string;
   /** 没有自然标题的对象（授权、会话、约束等）在界面上的简短名称。 */
   display_names: Record<Ref, string>;
-  /** 路线在图上和标签里使用的短名称；没有时用路线全名。 */
+  /** 项目和路线在顶栏、图上和标签里使用的短名称；没有时用全名。 */
   short_names: Record<Ref, string>;
   /**
    * 证据“限制主张的适用范围”，但既不支持也不反驳它（例如缺少对照，只能说明某个条件下结果仍不理想）。
@@ -159,8 +167,8 @@ export interface StageAExtensions {
   /** 实验运行的关键结果，一句话。 */
   run_results: Record<Ref, string>;
   contract_gaps: { topic: string; spec_section: string; decision_record: string }[];
-  viewer: { principal_id: Ref; display_name: string; last_visit_at: string; now: string };
-  home: {
+  viewer?: { principal_id: Ref; display_name: string; last_visit_at: string; now: string };
+  home?: {
     /**
      * 首页的要点：问题、主线、已知、未知。每项一句话，并记下写作时依据的对象版本。
      * “正在做”不在这里：它由项目当前的焦点单元和执行会话算出。
@@ -181,7 +189,7 @@ export interface StageAExtensions {
   glossary: GlossaryEntry[];
   unit_details: Record<Ref, UnitDetail>;
   branch_notes: Record<Ref, { status_note: string; resume_condition: string | null; reusable_findings: string[] }>;
-  comparison: Comparison;
+  comparison?: Comparison;
   reliability_curves: ReliabilityCurve[];
   rule_checks: Record<Ref, { rule: string; detail: string; refs: Ref[] }[]>;
   test_materials: Record<Ref, { harness_summary: string; summary_note: string }>;

@@ -363,6 +363,7 @@ export const extensions: StageAExtensions = {
     run_alloc_v2: '对照实验第二次运行',
   },
   short_names: {
+    prj_mcs: '移动群智感知项目',
     brn_main: '路线B（主线）',
     brn_a: '路线A',
     brn_c: '路线C',
@@ -564,6 +565,8 @@ export const extensions: StageAExtensions = {
   },
   comparison: {
     question: '车辆位置预测有误差时，怎样提高任务完成率？',
+    card_metric_label: '任务完成率（预算100，5个种子）',
+    notes: ['路线A早先用单一种子得到的 0.74 用的是旧规则，不能和上面的数字比较。'],
     dimension_labels: {
       problem: '解决的具体问题',
       assumptions: '关键假设',

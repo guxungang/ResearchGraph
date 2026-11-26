@@ -4,14 +4,14 @@ import { Background, Controls, Handle, MarkerType, Position, ReactFlow, ReactFlo
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { ResearchUnit } from '@rw/contracts';
 import { WORK_STATE, label } from '@rw/domain';
-import { useStore } from '../data/store.tsx';
+import { storageKey, useStore } from '../data/store.tsx';
 import { currentPath, get, runningSessionFor, unitDepth, type Model } from '../data/model.ts';
 import { branchShort, routeColor } from '../data/format.ts';
 import { navigate, type Route } from '../router.ts';
 import { Badge } from '../components/ui.tsx';
 
-const PINS_KEY = 'rw.stageA.map.pins.v1';
-const LAYOUT_KEY = 'rw.stageA.map.layout.v1';
+const PINS_KEY = storageKey('map.pins');
+const LAYOUT_KEY = storageKey('map.layout');
 const NODE_W = 210;
 const NODE_H = 92;
 
@@ -243,7 +243,7 @@ export function MapView({ route, listMode = false }: { route: Route; listMode?: 
       <div className="row spread page-title">
         <div>
           <h1>研究路线</h1>
-          <p className="muted" style={{ margin: '4px 0 0' }}>{m.ext.home.summary.question}</p>
+          <p className="muted" style={{ margin: '4px 0 0' }}>{m.ext.home?.summary.question ?? m.project.goal}</p>
         </div>
         <div className="row">
           <div className="seg" role="group" aria-label="显示方式">

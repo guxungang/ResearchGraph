@@ -8,6 +8,32 @@ import type { StageAExtensions } from '@fixtures/src/extension-types.ts';
 import { reviewCurrency } from '@rw/domain';
 
 export type { StageAExtensions };
+
+/** 扩展数据缺省时补成空值；首页要点、路线比较、查看者可以不存在（界面会由状态整理）。 */
+export function normalizeExt(raw: Partial<StageAExtensions> | null | undefined): StageAExtensions {
+  const r = raw ?? {};
+  return {
+    extension_version: r.extension_version ?? 'none',
+    notice: r.notice ?? '',
+    display_names: r.display_names ?? {},
+    short_names: r.short_names ?? {},
+    evidence_limits: r.evidence_limits ?? [],
+    one_liners: r.one_liners ?? {},
+    run_results: r.run_results ?? {},
+    contract_gaps: r.contract_gaps ?? [],
+    viewer: r.viewer,
+    home: r.home,
+    connections: r.connections ?? [],
+    attention_items: r.attention_items ?? [],
+    glossary: r.glossary ?? [],
+    unit_details: r.unit_details ?? {},
+    branch_notes: r.branch_notes ?? {},
+    comparison: r.comparison,
+    reliability_curves: r.reliability_curves ?? [],
+    rule_checks: r.rule_checks ?? {},
+    test_materials: r.test_materials ?? {},
+  };
+}
 export type AnyEntity = { id: string; revision: number; updated_at?: string } & Record<string, unknown>;
 
 /**
@@ -105,7 +131,8 @@ const addRevision = (history: Map<string, AnyEntity[]>, e: AnyEntity) => {
   history.set(e.id, list);
 };
 
-export function buildModel(snapshot: ProjectSnapshot, ext: StageAExtensions, local: LocalEvent[], flags: Flags): Model {
+export function buildModel(snapshot: ProjectSnapshot, rawExt: Partial<StageAExtensions> | null | undefined, local: LocalEvent[], flags: Flags): Model {
+  const ext = normalizeExt(rawExt);
   const byId = new Map<string, AnyEntity>();
   const history = new Map<string, AnyEntity[]>();
 
@@ -199,11 +226,14 @@ export const revisionAt = (m: Model, id: string, revision: number): AnyEntity | 
 
 export const unitBrief = (m: Model, unitId: string): ReadingBrief | undefined => m.briefs.find((b) => b.unit_id === unitId);
 
-/** 阅读说明引用的对象已有更新修订时，说明过时（方案 §5.6）。 */
+/**
+ * 说明引用的对象已有更新修订，或已经找不到时，说明过时（方案 §5.6）。
+ * 找不到的对象记为 current = undefined：来源缺失不能当作“没有变化”。
+ */
 export function staleRefs(m: Model, refs: { entity_id: string; revision: number }[]) {
   return refs
-    .map((r) => ({ ...r, current: m.byId.get(r.entity_id)?.revision }))
-    .filter((r) => r.current !== undefined && r.current !== r.revision);
+    .map((r) => ({ ...r, current: m.byId.get(r.entity_id)?.revision as number | undefined }))
+    .filter((r) => r.current !== r.revision);
 }
 
 export const runningSessionFor = (m: Model, unitId: string) =>

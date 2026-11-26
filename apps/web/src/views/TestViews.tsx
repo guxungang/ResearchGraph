@@ -24,6 +24,7 @@ export const QUESTIONS = [
 export function TestIndexView() {
   const { model: m } = useStore();
   const units = Object.keys(m.ext.test_materials);
+  if (!units.length) return <div className="narrow"><div className="page-title"><h1>理解测试材料</h1><p>这个项目没有准备理解测试材料。测试材料目前只为内置的虚构示例准备。</p></div></div>;
   return (
     <div className="narrow">
       <div className="page-title">

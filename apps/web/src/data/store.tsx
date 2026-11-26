@@ -5,9 +5,25 @@ import extensionsUrl from '@fixtures/stage-a.extensions.json?url';
 import { buildModel, emptyFlags, type Flags, type LocalEvent, type Model, type StageAExtensions } from './model.ts';
 import type { Result } from './service.ts';
 
-const STORAGE_KEY = 'rw.stageA.local.v1';
+// 当前打开的项目：地址里的 ?project=<名字>，默认是内置的虚构示例。项目数据由开发服务器按名字提供（apps/web/projects-plugin.ts），
+// 不编译进前端；换一个项目不需要改前端代码。
+const NAME = /^[a-z0-9][a-z0-9-]{0,63}$/;
+export const PROJECT = (() => {
+  const p = new URLSearchParams(window.location.search).get('project');
+  return p && NAME.test(p) ? p : 'stage-a';
+})();
+
+/** 本机保存的模拟操作、浏览位置、图布局按项目分开，互不影响。内置示例沿用原来的键名。 */
+export const storageKey = (name: string) => (PROJECT === 'stage-a' ? `rw.stageA.${name}.v1` : `rw.project.${PROJECT}.${name}.v1`);
+const STORAGE_KEY = storageKey('local');
 const PREFS_KEY = 'rw.stageA.prefs.v1';
-const VIEWING_KEY = 'rw.stageA.viewing.v1';
+const VIEWING_KEY = storageKey('viewing');
+
+export interface ProjectInfo {
+  name: string;
+  label: string;
+  source: 'builtin' | 'local';
+}
 
 export interface Prefs {
   theme: 'system' | 'light' | 'dark' | 'contrast';
@@ -23,6 +39,8 @@ export interface Toast {
 
 interface StoreValue {
   model: Model;
+  project: string;
+  projects: ProjectInfo[];
   run: (fn: (m: Model) => Result) => Result;
   reset: () => void;
   viewingUnitId: string | null;
@@ -56,11 +74,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefsState] = useState<Prefs>(() => readJson(PREFS_KEY, { theme: 'system', textScale: 1 } as Prefs));
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [liveText, setLiveText] = useState('');
+  const [projects, setProjects] = useState<ProjectInfo[]>([]);
 
   useEffect(() => {
-    Promise.all([fetch(snapshotUrl).then((r) => r.json()), fetch(extensionsUrl).then((r) => r.json())])
+    const json = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${url}：${r.status}`))));
+    const fromServer = Promise.all([json(`/rw-projects/${PROJECT}/snapshot.json`), json(`/rw-projects/${PROJECT}/extensions.json`)]);
+    // 静态构建没有项目接口：只能打开随包附带的虚构示例
+    const fallback = () => (PROJECT === 'stage-a' ? Promise.all([json(snapshotUrl), json(extensionsUrl)]) : Promise.reject(new Error(`找不到项目“${PROJECT}”`)));
+    fromServer
+      .catch(fallback)
       .then(([snapshot, ext]) => setData({ snapshot, ext }))
       .catch((e) => setLoadError(String(e)));
+    json('/rw-projects/index.json').then(setProjects).catch(() => setProjects([{ name: 'stage-a', label: '虚构示例', source: 'builtin' }]));
   }, []);
 
   useEffect(() => {
@@ -111,11 +136,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(VIEWING_KEY, JSON.stringify(id));
   }, []);
 
-  if (loadError) return <div className="page" role="alert" style={{ padding: 40 }}>无法载入夹具：{loadError}</div>;
+  if (loadError) return <div className="page" role="alert" style={{ padding: 40 }}>无法载入项目数据：{loadError}。<a href="?">打开内置示例</a></div>;
   if (!model) return <div className="page" style={{ padding: 40 }} aria-busy="true">正在载入项目……</div>;
 
   const value: StoreValue = {
     model,
+    project: PROJECT,
+    projects,
     run,
     reset,
     viewingUnitId,

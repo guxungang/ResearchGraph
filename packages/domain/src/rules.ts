@@ -35,22 +35,32 @@ export interface GrantActor {
 }
 
 /**
- * 授权是否覆盖“某个执行者”对“某个目标”做“某个动作”。依次检查：状态与期限、执行者身份、项目、动作、范围、应用策略。
- * 过期、撤销的授权永不覆盖（不变量：旧快照或历史消息不能重新激活授权）。任何授权都不让模型应用变更（合同：应用策略说明）。
+ * 授权本身是否可用：状态与期限、执行者身份、项目、应用策略。不看具体动作。
+ * 合同里没有对应动作、但仍需要“本人有效授权”的人工操作（例如拒绝候选）用它检查。
  */
-export function grantCovers(grant: GrantLike, action: string, target: GrantTarget, actor: GrantActor, now: string): { ok: true } | { ok: false; reason: string } {
+export function grantUsable(grant: GrantLike, target: Pick<GrantTarget, 'projectId'>, actor: GrantActor, now: string): { ok: true } | { ok: false; reason: string } {
   if (grant.status !== 'active') return { ok: false, reason: `授权 ${grant.id} 状态为 ${grant.status === 'expired' ? '已过期' : '已撤销'}，不能用于新的动作。` };
   if (grant.expires_at && grant.expires_at <= now) return { ok: false, reason: `授权 ${grant.id} 已于 ${grant.expires_at} 到期。` };
   if (actor.kind === 'agent') return { ok: false, reason: '模型不能凭任何授权应用变更。' };
   if (!grant.subject_principal_ids.includes(actor.principal_id)) return { ok: false, reason: `授权 ${grant.id} 不是授予 ${actor.principal_id} 的。` };
+  if (grant.scope.project_id !== target.projectId) return { ok: false, reason: `授权 ${grant.id} 属于项目 ${grant.scope.project_id}，不能用于项目 ${target.projectId}。` };
+  if (grant.application_policy === 'human_only' && actor.kind !== 'human') return { ok: false, reason: `授权 ${grant.id} 只能由人亲自使用。` };
+  return { ok: true };
+}
+
+/**
+ * 授权是否覆盖“某个执行者”对“某个目标”做“某个动作”。依次检查：状态与期限、执行者身份、项目、动作、范围、应用策略。
+ * 过期、撤销的授权永不覆盖（不变量：旧快照或历史消息不能重新激活授权）。任何授权都不让模型应用变更（合同：应用策略说明）。
+ */
+export function grantCovers(grant: GrantLike, action: string, target: GrantTarget, actor: GrantActor, now: string): { ok: true } | { ok: false; reason: string } {
+  const usable = grantUsable(grant, target, actor, now);
+  if (!usable.ok) return usable;
   const s = grant.scope;
-  if (s.project_id !== target.projectId) return { ok: false, reason: `授权 ${grant.id} 属于项目 ${s.project_id}，不能用于项目 ${target.projectId}。` };
   if (!grant.actions.includes(action)) return { ok: false, reason: `授权 ${grant.id} 不包含动作 ${action}。` };
   if (s.kind === 'units' && !(target.unitId && s.unit_ids?.includes(target.unitId))) return { ok: false, reason: `授权 ${grant.id} 只覆盖单元 ${s.unit_ids?.join('、')}。` };
   if (s.kind === 'branches' && !(target.branchId && s.branch_ids?.includes(target.branchId))) return { ok: false, reason: `授权 ${grant.id} 只覆盖分支 ${s.branch_ids?.join('、')}。` };
   if (s.kind === 'proposal' && !(target.proposalId === s.proposal_id && target.proposalRevision === s.proposal_revision))
     return { ok: false, reason: `授权 ${grant.id} 只覆盖提案 ${s.proposal_id} 第${s.proposal_revision}版。` };
-  if (grant.application_policy === 'human_only' && actor.kind !== 'human') return { ok: false, reason: `授权 ${grant.id} 只能由人亲自使用。` };
   if (grant.application_policy === 'policy_exact_proposal' && s.kind !== 'proposal') return { ok: false, reason: `授权 ${grant.id} 要求绑定一个具体的提案版本。` };
   return { ok: true };
 }

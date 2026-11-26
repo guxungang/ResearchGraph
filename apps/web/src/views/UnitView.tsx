@@ -5,7 +5,7 @@ import type { Claim, ContextBundle, Decision, Evidence, ReadingBrief, ResearchUn
 import { DECISION, OBSERVATION, PRECISION, REVIEW, SESSION_STATE, UNDERSTANDING, WORK_STATE } from '@rw/domain';
 import { useStore } from '../data/store.tsx';
 import { get, reviewsFor, runningSessionFor, staleRefs, unitBrief, type Model } from '../data/model.ts';
-import { buildHandoff } from '../data/derive.ts';
+import { buildHandoff, planCheck } from '../data/derive.ts';
 import { branchShort, displayName, fmtTime, kindName, versionText } from '../data/format.ts';
 import { setQuery, type Route } from '../router.ts';
 import { briefFeedback, interruptSession, markUnderstanding, recordReview, reviseNextAction, startWorkHere } from '../data/service.ts';
@@ -67,21 +67,83 @@ export function UnitView({ id, route }: { id: string; route: Route }) {
   );
 }
 
+// ---------------------------------------------------------------- 当前安排
+/**
+ * 下一步以研究单元当前的安排为准，优先于阅读说明里当时的建议（D-007）。
+ * 安排写于相关决定之前时，标为可能已过时，并给出按决定改写的建议；改不改由研究负责人确认。
+ */
+function NextStep({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: ReadingBrief }) {
+  const { run } = useStore();
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(unit.next_action);
+  const plan = planCheck(m, unit);
+  const earlier = brief && brief.recommended_next_step.trim() !== unit.next_action.trim() ? brief.recommended_next_step : null;
+  const edit = (initial: string) => {
+    setText(initial);
+    setEditing(true);
+  };
+  return (
+    <section aria-labelledby={`next-${unit.id}`}>
+      <h2 id={`next-${unit.id}`}>下一步</h2>
+      <div className="plan-current">
+        <span className="label">当前安排 · {fmtTime(unit.updated_at)}</span>
+        <RichText as="p" text={unit.next_action} compact />
+      </div>
+      {plan.stale ? (
+        <div className="warn-box small">
+          这条安排写于相关决定之前，可能已经过时：{plan.decisions.map((d, i) => <span key={d.id}>{i ? '；' : ''}<Ref id={d.id} /></span>)}。
+          <button type="button" className="link" onClick={() => edit(plan.suggestion)}>按决定更新…</button>
+        </div>
+      ) : null}
+      {editing ? (
+        <div className="stack" style={{ marginTop: 8 }}>
+          <label htmlFor={`next-edit-${unit.id}`} className="small">修改下一步（保存后成为{versionText(unit.revision + 1)}，各处以它为准）</label>
+          <textarea id={`next-edit-${unit.id}`} value={text} onChange={(e) => setText(e.target.value)} />
+          <div className="row" style={{ gap: 6 }}>
+            <button type="button" className="sm primary" onClick={() => { const r = run((mm) => reviseNextAction(mm, { unitId: unit.id, nextAction: text, expectedRevision: mm.project.revision })); if (r.ok) setEditing(false); }}>保存</button>
+            <button type="button" className="sm ghost" onClick={() => setEditing(false)}>取消</button>
+          </div>
+        </div>
+      ) : !plan.stale ? (
+        <button type="button" className="link small" onClick={() => edit(unit.next_action)}>修改下一步</button>
+      ) : null}
+      {earlier ? (
+        <details style={{ marginTop: 8 }}>
+          <summary className="small muted">阅读说明里当时的建议（{fmtTime(brief!.generation.generated_at)}，仅供参考）</summary>
+          <RichText as="p" text={earlier} compact />
+        </details>
+      ) : null}
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------- 说明
 function BriefTab({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: ReadingBrief }) {
   const { run } = useStore();
   const { open } = useTerms();
   const [example, setExample] = useState(false);
-  if (!brief) return <Empty>这个单元还没有说明。原始材料可以在“证据”里查看。</Empty>;
+  if (!brief)
+    return (
+      <article className="reading">
+        <Empty>这个单元还没有阅读说明。原始材料可以在“证据”里查看。</Empty>
+        <NextStep m={m} unit={unit} />
+      </article>
+    );
   const detail = m.ext.unit_details[unit.id];
   const stale = staleRefs(m, brief.source_revision_refs).filter((r) => r.entity_id !== m.project.id);
+  const missing = stale.filter((r) => r.current === undefined).length;
+  const request = brief.decision_request;
+  // 说明里提出的待决定事项：先看它对应的候选指向哪项决定，没有再看单元关联的决定
+  const viaProposal = request?.proposal_id ? m.proposals.find((p) => p.id === request.proposal_id)?.commands.find((c) => c.kind === 'decide_decision') : undefined;
+  const requestDecisionId = (viaProposal as { decision_id?: string } | undefined)?.decision_id ?? unit.decision_ids.find((x) => x.startsWith('dec_'));
+  const requestDecision = request && requestDecisionId ? get<Decision>(m, requestDecisionId) : undefined;
   const openPrereq = (p: ReadingBrief['prerequisites'][number], el: HTMLElement) => {
     const g = m.ext.glossary.find((x) => x.term === p.term || x.aliases.includes(p.term) || x.match.includes(p.term));
     open(g ?? { id: `pre-${p.term}`, term: p.term, aliases: [], match: [], plain: p.plain_explanation, formal: null, scope_branch_ids: null, scope_note: p.why_needed, valid_from_project_revision: m.project.revision, source: { entity_id: brief.id, note: '阅读说明中的概念' }, example: null }, el);
   };
   return (
     <article className="reading">
-      {stale.length ? <div className="warn-box small">这份说明写好之后，相关内容又更新过（{stale.length} 处）。新说明完成前先保留这一版，请留意。</div> : null}
+      {stale.length ? <div className="warn-box small">这份说明写好之后，相关内容又更新过（{stale.length} 处{missing ? `，其中 ${missing} 处来源已经找不到` : ''}）。新说明完成前先保留这一版，请留意；“下一步”以当前安排为准。</div> : null}
 
       <h2>为什么做这项工作</h2>
       <RichText as="p" text={brief.why_this_work} compact />
@@ -107,13 +169,14 @@ function BriefTab({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: Re
         </div>
       </div>
 
-      <h2>下一步</h2>
-      <RichText as="p" text={brief.recommended_next_step} compact />
-      {brief.decision_request ? (
+      <NextStep m={m} unit={unit} brief={brief} />
+      {request && (!requestDecision || requestDecision.status === 'proposed') ? (
         <div className="info-box row spread">
-          <span><strong>需要你决定：</strong>{brief.decision_request.question}</span>
-          <a className="btn sm primary" href={`#/decisions?focus=${unit.decision_ids.find((d) => d.startsWith('dec_')) ?? ''}`}>去决定</a>
+          <span><strong>需要你决定：</strong>{request.question}</span>
+          <a className="btn sm primary" href={`#/decisions?focus=${requestDecision?.id ?? ''}`}>去决定</a>
         </div>
+      ) : request && requestDecision ? (
+        <p className="small muted">说明里提出的“{request.question}”已经决定：<Ref id={requestDecision.id} />。</p>
       ) : null}
 
       <div className="row" style={{ marginTop: 18 }}>
@@ -433,7 +496,7 @@ function ExecutionCard({ m, unit }: { m: Model; unit: ResearchUnit }) {
       {session ? (
         <div className="stack">
           <div className="row"><Badge table={SESSION_STATE} value={session.state} /></div>
-          <div className="small muted">Codex CLI · 伴随模式 · 最近活动 {fmtTime(session.last_observed_at)}</div>
+          <div className="small muted">{m.ext.connections.find((c) => c.harness_instance_id === session.harness_instance_id)?.label ?? displayName(m, session.harness_instance_id)} · 最近活动 {fmtTime(session.last_observed_at)}</div>
           <button type="button" className="sm" style={{ alignSelf: 'flex-start' }} onClick={() => run((mm) => interruptSession(mm, { sessionId: session.id }))}>停止</button>
         </div>
       ) : (
@@ -449,9 +512,7 @@ function ExecutionCard({ m, unit }: { m: Model; unit: ResearchUnit }) {
 
 function ReviewCard({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: ReadingBrief }) {
   const { run } = useStore();
-  const [editing, setEditing] = useState(false);
   const [asking, setAsking] = useState(false);
-  const [text, setText] = useState(unit.next_action);
   const unitReview = reviewsFor(m, unit.id).find((r) => r.is_current && r.status !== 'unreviewed');
   const briefReview = brief ? reviewsFor(m, brief.id).find((r) => r.is_current) : undefined;
   return (
@@ -462,7 +523,7 @@ function ReviewCard({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: 
       {asking ? (
         <ReasonForm
           label="需要修改什么？"
-          placeholder="例如：结论只适用于测试划分，标题里不要写“改善了可靠性”。"
+          placeholder="例如：结论只适用于测试数据，标题不要写成已经普遍成立。"
           required
           confirmLabel="提交“需要修改”"
           onCancel={() => setAsking(false)}
@@ -485,19 +546,6 @@ function ReviewCard({ m, unit, brief }: { m: Model; unit: ResearchUnit; brief?: 
           </div>
         </>
       ) : null}
-      <hr style={{ margin: '14px 0' }} />
-      {editing ? (
-        <div className="stack">
-          <label htmlFor="next-edit" className="small">修改下一步（保存后成为{versionText(unit.revision + 1)}）</label>
-          <textarea id="next-edit" value={text} onChange={(e) => setText(e.target.value)} />
-          <div className="row" style={{ gap: 6 }}>
-            <button type="button" className="sm primary" onClick={() => { const r = run((mm) => reviseNextAction(mm, { unitId: unit.id, nextAction: text, expectedRevision: mm.project.revision })); if (r.ok) setEditing(false); }}>保存</button>
-            <button type="button" className="sm ghost" onClick={() => setEditing(false)}>取消</button>
-          </div>
-        </div>
-      ) : (
-        <button type="button" className="link small" onClick={() => setEditing(true)}>修改下一步</button>
-      )}
     </div>
   );
 }
@@ -516,6 +564,8 @@ function HandoffDrawer({ unitId, onClose }: { unitId: string; onClose: () => voi
         </p>
       ) : <p className="small muted">这个单元还没有交给模型的上下文，材料按阅读说明和当前状态整理。</p>}
       {h.briefStale ? <div className="warn-box small">阅读说明写好之后，它依据的内容又更新过。材料里的“已知/尚未证明”可能已经过时，请先核对。</div> : null}
+      {h.missing.length ? <div className="warn-box small">上下文里有 {h.missing.length} 条内容找不到来源（{h.missing.join('、')}），没有交给模型。</div> : null}
+      {h.planStale ? <div className="warn-box small">“下一步”写于相关决定之前，材料里已注明，建议先在说明页按决定更新下一步。</div> : null}
       <label htmlFor="handoff-text" className="sr-only">交接材料</label>
       <textarea id="handoff-text" readOnly value={h.text} style={{ minHeight: 280, fontSize: '0.85rem' }} />
       <button type="button" className="primary" style={{ marginTop: 10 }} onClick={() => navigator.clipboard?.writeText(h.text)}>复制</button>

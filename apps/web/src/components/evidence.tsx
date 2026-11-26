@@ -3,14 +3,15 @@ import type { Claim, Evidence, ExperimentRun } from '@rw/contracts';
 import { ASSESSMENT, AVAILABILITY, CAPTURE, CURRENCY, RUN_STATE, VERIFICATION } from '@rw/domain';
 import type { Model } from '../data/model.ts';
 import { displayName, fmtTime } from '../data/format.ts';
-import { claimEvidence, evidenceClaims, ROLE_TEXT } from '../data/derive.ts';
+import { claimEvidence, evidenceClaims, ROLE_TEXT, VALIDITY_TEXT } from '../data/derive.ts';
 import { Badge, Locator, Ref, RichText } from './ui.tsx';
 
 const CLAIM_KIND: Record<string, string> = { hypothesis: '假设', finding: '发现', assumption: '前提', paper_claim: '论文陈述' };
 
 export function ClaimRow({ m, claim, open = false }: { m: Model; claim: Claim; open?: boolean }) {
-  const { supports: sup, contradicts: con, limits } = claimEvidence(m, claim);
+  const { supports: sup, contradicts: con, limits, revalidate, historical } = claimEvidence(m, claim);
   const edges = [...sup, ...con];
+  const other = [...revalidate, ...historical];
   const noEvidencePaper = claim.claim_kind === 'paper_claim' && !claim.evidence_ids.length;
   return (
     <details className="rowd" open={open} id={`focus-${claim.id}`}>
@@ -18,14 +19,14 @@ export function ClaimRow({ m, claim, open = false }: { m: Model; claim: Claim; o
         <span className="grow">
           <span className="title" style={{ fontWeight: 550 }}>{claim.text}</span>
           <span className="sub" style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-3)' }}>
-            {CLAIM_KIND[claim.claim_kind]} · 支持 {sup.length} · 反证 {con.length}{limits.length ? ` · 限制 ${limits.length}` : ''}
+            {CLAIM_KIND[claim.claim_kind]} · 当前有效：支持 {sup.length} · 反证 {con.length}{limits.length ? ` · 限制 ${limits.length}` : ''}{revalidate.length ? ` · 需要重新核验 ${revalidate.length}` : ''}
           </span>
         </span>
         {noEvidencePaper ? <span className="chip strong-red">缺少证据</span> : <Badge table={ASSESSMENT} value={claim.assessment} />}
       </summary>
       <div className="rowd-body">
         <p className="small"><span className="label">适用条件　</span><RichText text={claim.conditions} compact /></p>
-        {edges.length || limits.length ? (
+        {edges.length || limits.length || other.length ? (
           <ul className="small" style={{ paddingLeft: '1.1em' }}>
             {edges.map((e) => (
               <li key={e.id}>
@@ -39,6 +40,14 @@ export function ClaimRow({ m, claim, open = false }: { m: Model; claim: Claim; o
                 <span className="chip" style={{ marginRight: 6 }}>限制</span>
                 <Ref id={l.evidence_id} />
                 <div className="muted">{l.note}</div>
+              </li>
+            ))}
+            {other.length ? <li className="muted" style={{ listStyle: 'none', marginTop: 6 }}>下面这些不计入当前判断：</li> : null}
+            {other.map((e) => (
+              <li key={e.id} className="muted">
+                <span className="chip" style={{ marginRight: 6 }}>{e.relation === 'supports' ? '曾支持' : '曾反驳'}</span>
+                <Ref id={e.source_id} version={e.source_revision} />
+                <span>（建立时针对主张{`第${e.target_revision}版`}，{e.currency === 'needs_revalidation' && e.state === 'active' ? VALIDITY_TEXT.revalidate : VALIDITY_TEXT.historical}）</span>
               </li>
             ))}
           </ul>
@@ -96,7 +105,7 @@ export function RunRow({ m, run, open = false }: { m: Model; run: ExperimentRun;
           <dt>环境</dt><dd>{run.environment_artifact_version_id ? <Ref id={run.environment_artifact_version_id} /> : <span className="muted">缺失</span>}</dd>
           <dt>随机种子</dt><dd>{run.random_seeds.length ? run.random_seeds.join('、') : '无'}</dd>
           <dt>记录完整性</dt><dd><Badge table={CAPTURE} value={run.capture_completeness} />{run.missing_fields.length ? <span className="muted">　缺：{run.missing_fields.join('、')}</span> : null}</dd>
-          <dt>关联主张</dt><dd>{rels.length ? rels.map((g, i) => <span key={`${g.evidence_id}-${g.claim_id}`}>{i ? '；' : ''}{ROLE_TEXT[g.role]} <Ref id={g.claim_id} /></span>) : '无'}</dd>
+          <dt>关联主张</dt><dd>{rels.length ? rels.map((g, i) => <span key={`${g.evidence_id}-${g.claim_id}`}>{i ? '；' : ''}{ROLE_TEXT[g.role]} <Ref id={g.claim_id} />{g.validity !== 'current' ? `（${VALIDITY_TEXT[g.validity]}）` : ''}</span>) : '无'}</dd>
         </dl>
         {run.metrics.length ? (
           <div className="table-wrap" style={{ marginTop: 8 }}>

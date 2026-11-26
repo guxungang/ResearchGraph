@@ -1,4 +1,4 @@
-// 校验阶段A夹具：
+// 校验内置的项目夹具（每个都要通过同样的检查）：
 // 1) 快照按合同 domain.schema.json（JSON Schema 2020-12）校验；
 // 2) 跨对象引用与关键不变量（方案 §10.6、合同 README 第三、四节）；
 // 3) 扩展数据中的引用都指向存在的对象。
@@ -11,12 +11,35 @@ import { reviewCurrency } from '../packages/domain/src/rules.ts';
 const root = new URL('..', import.meta.url).pathname;
 const read = (p: string) => JSON.parse(readFileSync(join(root, p), 'utf8'));
 const schema = read('packages/contracts/schema/domain.schema.json');
-const snap = read('fixtures/stage-a/stage-a.snapshot.json');
-const ext = read('fixtures/stage-a/stage-a.extensions.json');
-
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
 const validate = ajv.compile(schema);
+
+/** 内置项目。extensions 为 null 表示没有扩展数据：真实导入的项目一开始通常就是这样，界面必须照样能用。 */
+const PROJECTS = [
+  { name: 'stage-a', snapshot: 'fixtures/stage-a/stage-a.snapshot.json', extensions: 'fixtures/stage-a/stage-a.extensions.json', requireUnitDetails: true },
+  { name: 'mini', snapshot: 'fixtures/mini/mini.snapshot.json', extensions: null, requireUnitDetails: false },
+];
+
+/** 扩展数据缺省时补空值（与 apps/web/src/data/model.ts 的 normalizeExt 一致）。 */
+const normalize = (r: Record<string, any>) => ({
+  display_names: {}, short_names: {}, evidence_limits: [], one_liners: {}, run_results: {}, contract_gaps: [], connections: [], attention_items: [],
+  glossary: [], unit_details: {}, branch_notes: {}, reliability_curves: [], rule_checks: {}, test_materials: {}, ...r,
+});
+
+let failed = 0;
+for (const P of PROJECTS) {
+  const problems = check(P);
+  if (problems.length) {
+    failed++;
+    console.error(`✗ ${P.name}：${problems.length} 个问题\n${problems.map((x) => `  ✗ ${x}`).join('\n')}`);
+  }
+}
+if (failed) process.exit(1);
+
+function check(P: (typeof PROJECTS)[number]): string[] {
+const snap = read(P.snapshot);
+const ext: Record<string, any> = normalize(P.extensions ? read(P.extensions) : {});
 const problems: string[] = [];
 if (!validate(snap)) {
   for (const e of validate.errors ?? []) problems.push(`schema ${e.instancePath} ${e.message} ${JSON.stringify(e.params)}`);
@@ -132,9 +155,11 @@ for (const l of limits) {
 const known = (id: string) => has(id) || /^(cst_|act_)/.test(id);
 for (const id of Object.keys(ext.display_names)) if (!known(id) && !id.startsWith('src_')) problems.push(`扩展 display_names 引用不存在的 ${id}`);
 const extRef = (id: string, where: string) => { if (!known(id)) problems.push(`扩展 ${where} 引用不存在的 ${id}`); };
-for (const c of ext.home.changes_since_last_visit) c.refs.forEach((r: string) => extRef(r, 'home.changes'));
-ext.home.biggest_uncertainty.refs.forEach((r: string) => extRef(r, 'home.uncertainty'));
-ext.home.recent_output_ids.forEach((r: string) => extRef(r, 'home.recent'));
+if (ext.home) {
+  for (const c of ext.home.changes_since_last_visit) c.refs.forEach((r: string) => extRef(r, 'home.changes'));
+  ext.home.biggest_uncertainty.refs.forEach((r: string) => extRef(r, 'home.uncertainty'));
+  ext.home.recent_output_ids.forEach((r: string) => extRef(r, 'home.recent'));
+}
 for (const a of ext.attention_items) [...a.refs, ...a.affected].forEach((r: string) => extRef(r, a.id));
 // 说明依据的版本：对象存在，且是当前修订（夹具里的说明都应是最新写的）
 const checkBasis = (refs: { entity_id: string; revision: number }[], where: string) => {
@@ -144,10 +169,12 @@ const checkBasis = (refs: { entity_id: string; revision: number }[], where: stri
     else if (t.revision !== r.revision) problems.push(`${where} 依据 ${r.entity_id}@${r.revision}，当前为 ${t.revision}`);
   }
 };
-const s = ext.home.summary;
-checkBasis(s.mainline.basis, 'home.mainline'); checkBasis(s.known.basis, 'home.known'); checkBasis(s.unknown.basis, 'home.unknown');
-for (const r of ext.comparison.routes) checkBasis(r.basis, `comparison.${r.branch_id}`);
-for (const id of Object.keys(ext.short_names)) if (!id.startsWith('brn_') || !has(id)) problems.push(`short_names 引用的 ${id} 不是已有路线`);
+if (ext.home) {
+  const s = ext.home.summary;
+  checkBasis(s.mainline.basis, 'home.mainline'); checkBasis(s.known.basis, 'home.known'); checkBasis(s.unknown.basis, 'home.unknown');
+}
+for (const r of ext.comparison?.routes ?? []) checkBasis(r.basis, `comparison.${r.branch_id}`);
+for (const id of Object.keys(ext.short_names)) if (!/^(brn|prj)_/.test(id) || !has(id)) problems.push(`short_names 引用的 ${id} 不是已有的项目或路线`);
 // 待关注事项的“仍然成立”条件在夹具中必须为真：夹具里列出的都是当前未处理的事
 for (const a of ext.attention_items) {
   const c = a.open_while;
@@ -172,20 +199,17 @@ for (const [uid, d] of Object.entries<any>(ext.unit_details)) {
   d.implementation_layer.file_changes.forEach((f: any) => f.artifact_version_id && extRef(f.artifact_version_id, `${uid}.file_changes`));
   d.implementation_layer.mappings.forEach((m: any) => m.artifact_version_id && extRef(m.artifact_version_id, `${uid}.mappings`));
 }
-for (const uid of units.map((u) => u.id)) if (!ext.unit_details[uid]) problems.push(`扩展缺少 ${uid} 的 unit_details`);
-for (const r of ext.comparison.routes) { extRef(r.branch_id, 'comparison'); for (const v of Object.values<any>(r.dims)) v?.refs.forEach((x: string) => extRef(x, `comparison.${r.branch_id}`)); }
-for (const m of ext.comparison.metrics) { extRef(m.route_branch_id, 'metrics'); m.run_id && extRef(m.run_id, 'metrics'); }
+if (P.requireUnitDetails) for (const uid of units.map((u) => u.id)) if (!ext.unit_details[uid]) problems.push(`扩展缺少 ${uid} 的 unit_details`);
+for (const r of ext.comparison?.routes ?? []) { extRef(r.branch_id, 'comparison'); for (const v of Object.values<any>(r.dims)) v?.refs.forEach((x: string) => extRef(x, `comparison.${r.branch_id}`)); }
+for (const m of ext.comparison?.metrics ?? []) { extRef(m.route_branch_id, 'metrics'); m.run_id && extRef(m.run_id, 'metrics'); }
 for (const c of ext.reliability_curves) extRef(c.evidence_id, c.id);
 for (const [pid, checks] of Object.entries<any>(ext.rule_checks)) { extRef(pid, 'rule_checks'); checks.forEach((c: any) => c.refs.forEach((r: string) => extRef(r, `rule_checks.${pid}`))); }
 for (const uid of Object.keys(ext.test_materials)) extRef(uid, 'test_materials');
 for (const b of Object.keys(ext.branch_notes)) extRef(b, 'branch_notes');
 
-if (problems.length) {
-  console.error(problems.map((p) => `✗ ${p}`).join('\n'));
-  console.error(`\n共 ${problems.length} 个问题。`);
-  process.exit(1);
+if (!problems.length) {
+  const count = collections.reduce((n, c) => n + snap[c].length, 1);
+  console.log(`✓ ${P.name}：快照符合合同 domain.schema.json v1.0.0（${count} 个实体，${snap.events.length} 个事件节选）；跨对象引用、精确修订、谱系无环、审阅当前性、扩展数据引用检查通过`);
 }
-const count = collections.reduce((n, c) => n + snap[c].length, 1);
-console.log(`✓ 快照符合合同 domain.schema.json v1.0.0（${count} 个实体，${snap.events.length} 个事件节选）`);
-console.log('✓ 跨对象引用、精确修订、谱系无环、审阅当前性等检查通过');
-console.log('✓ 扩展数据引用全部可解析');
+return problems;
+}

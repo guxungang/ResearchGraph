@@ -19,7 +19,7 @@
     "test": "vitest run",
     "contracts:check": "node scripts/check-contracts.ts",
     "contracts:types": "node scripts/gen-contract-types.ts",
-    "fixtures": "node fixtures/stage-a/build.ts && node scripts/validate-fixtures.ts",
+    "fixtures": "node fixtures/stage-a/build.ts && node fixtures/mini/build.ts && node scripts/validate-fixtures.ts",
     "fixtures:validate": "node scripts/validate-fixtures.ts",
     "check": "npm run contracts:check && npm run fixtures:validate && npm run typecheck && npm test"
   },

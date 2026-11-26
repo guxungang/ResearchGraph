@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
+import { projectsPlugin } from './projects-plugin.ts';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), projectsPlugin()],
   resolve: {
     alias: {
       '@fixtures': fileURLToPath(new URL('../../fixtures/stage-a', import.meta.url)),

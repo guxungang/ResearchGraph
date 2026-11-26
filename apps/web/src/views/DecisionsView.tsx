@@ -7,7 +7,7 @@ import { useStore } from '../data/store.tsx';
 import { changesRequested, todo, type Model } from '../data/model.ts';
 import { displayName, fmtTime, versionText } from '../data/format.ts';
 import type { Route } from '../router.ts';
-import { agentApplyAttempt, applyCreateUnitProposal, decide, defer, policyApplyRoutine, rejectProposal, requestInfo, revokeGrant, undefer } from '../data/service.ts';
+import { ownerOf, agentApplyAttempt, applyCreateUnitProposal, decide, defer, policyApplyRoutine, rejectProposal, requestInfo, revokeGrant, undefer } from '../data/service.ts';
 import { Badge, Empty, Locator, ReasonForm, Ref, RichText, TermScope } from '../components/ui.tsx';
 
 export function DecisionsView({ route }: { route: Route }) {
@@ -139,7 +139,7 @@ function DecisionCard({ m, d, highlight }: { m: Model; d: Decision; highlight: b
       {pending ? (
         <ReasonForm
           label={`你选择了${pendingLabel}。为什么？`}
-          placeholder="例如：GPU 要先保证对照实验；等它出结果再开路线C。"
+          placeholder="例如：先保证正在进行的实验，等它出结果再开始。"
           confirmLabel="确认选择"
           onCancel={() => setPending(null)}
           onConfirm={(reason) => choose(pending.optionId, reason)}
@@ -184,7 +184,7 @@ function ProposalCard({ m, p, highlight }: { m: Model; p: Proposal; highlight: b
       {rejecting ? (
         <ReasonForm
           label="为什么拒绝？"
-          placeholder="例如：这条路线已经关闭过；没有新的失败分解证据之前不再考虑。"
+          placeholder="例如：这条路线已经关闭过；没有新的证据之前不再考虑。"
           confirmLabel="确认拒绝"
           onCancel={() => setRejecting(false)}
           onConfirm={(reason) => { const r = run((mm) => rejectProposal(mm, { proposalId: p.id, reason })); if (r.ok) setRejecting(false); }}
@@ -231,7 +231,7 @@ function Records({ m, focus, decided, handled }: { m: Model; focus: string | nul
   const inScope = m.units.find((u) => scopeUnits.includes(u.id));
   const outScope = m.units.find((u) => !scopeUnits.includes(u.id) && u.work_state !== 'archived' && u.work_state !== 'finished');
   /** 你本人只能亲自使用的授权，不在这里撤销（撤销后你将无法再做任何人工操作）。 */
-  const ownCore = (g: Grant) => g.application_policy === 'human_only' && g.subject_principal_ids.includes(m.ext.viewer.principal_id);
+  const ownCore = (g: Grant) => g.id === ownerOf(m).grant?.id;
   return (
     <div className="stack" style={{ marginTop: 8 }}>
       <h3 style={{ marginTop: 8 }}>已作出的决定</h3>
